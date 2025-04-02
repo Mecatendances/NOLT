@@ -1,0 +1,14 @@
+# Python
+venv/
+*.pyc
+__pycache__/
+*.log
+
+# Environnement
+.env
+.env.development
+.env.production
+
+# Divers
+.DS_Store
+*.swp
