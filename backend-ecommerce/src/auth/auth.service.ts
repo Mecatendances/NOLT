@@ -8,7 +8,7 @@ interface JwtAuthResponse {
 
 @Injectable()
 export class AuthService {
-  private WP_VALIDATE_URL = process.env.WP_API_URL || 'https://wpdev.wearenolt.com/wp-json/jwt-auth/v1/token/validate';
+  private WP_VALIDATE_URL = process.env.WP_JWT_AUTH_URL || 'https://wpdev.wearenolt.com/wp-json/jwt-auth/v1/token/validate';
 
   async validateUser(token: string) {
     console.log('🛠 Vérification du token reçu par NestJS:', token);
@@ -28,7 +28,7 @@ export class AuthService {
       } else {
         throw new UnauthorizedException('Invalid token');
       }
-    } catch (err) {  // ✅ Correction: Utilisation de `err` au lieu de `error`
+    } catch (err) {
       console.error('❌ Erreur de validation WordPress:', err.response?.data || err.message);
       throw new UnauthorizedException('Invalid token');
     }
