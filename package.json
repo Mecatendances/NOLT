@@ -1,5 +1,22 @@
 {
+  "name": "nolt",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@commitlint/cli": "^18.0.0",
+    "@commitlint/config-conventional": "^18.0.0",
+    "husky": "^8.0.0"
+  },
   "dependencies": {
+    "@nestjs/axios": "^4.0.0",
     "@nestjs/config": "^4.0.1",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/typeorm": "^11.0.0",
