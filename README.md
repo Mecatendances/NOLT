@@ -1,51 +1,31 @@
-# Catalogue Dolibarr
+# API Dolibarr
 
-Application de catalogue pour Dolibarr avec gestion des produits et des catégories.
+Backend API pour l'interface avec Dolibarr.
 
-## Fonctionnalités
+## Endpoints
 
-- 📦 Gestion des produits
-  - Vue liste et tableau
-  - Détails des produits
-  - Prix HT/TTC
-  - Gestion des stocks
+### Produits
+- `GET /api/dolibarr/products` - Liste des produits
+  - Query params:
+    - `category`: ID de la catégorie (optionnel)
+    - `page`: Numéro de page (défaut: 0)
+    - `includeStock`: Inclure les données de stock (défaut: false)
+- `GET /api/dolibarr/products/:id` - Détails d'un produit
 
-- 🌳 Gestion des catégories
-  - Vue arborescente
-  - Vue tableau
-  - Recherche et filtrage
-  - Navigation intuitive
+### Catégories
+- `GET /api/dolibarr/categories` - Liste des catégories
+- `GET /api/dolibarr/categories/tree` - Arborescence des catégories
+- `GET /api/dolibarr/categories/:id/products` - Produits d'une catégorie
 
 ## Installation
 
 ```bash
-# Installation des dépendances
 npm install
-
-# Configuration
-cp .env.example .env
-# Éditer .env avec vos paramètres
-
-# Démarrage en développement
-npm run start:dev
-
-# Démarrage en production
-npm run build
-npm run start:prod
 ```
-
-## Routes disponibles
-
-- `/` - Page d'accueil
-- `/api/dolibarr/products-view` - Vue des produits
-- `/api/dolibarr/products/table` - Tableau des produits
-- `/api/dolibarr/categories/tree` - Arborescence des catégories
-- `/api/dolibarr/categories/table` - Tableau des catégories
 
 ## Configuration
 
-Configurez les variables d'environnement dans le fichier `.env` :
-
+Créez un fichier `.env` :
 ```env
 DOLIBARR_API_URL=https://votre-url-dolibarr/api/index.php
 DOLIBARR_API_KEY=votre-cle-api
@@ -54,7 +34,13 @@ PORT=4000
 
 ## Développement
 
-Le projet utilise :
-- NestJS pour le backend
-- Express pour le serveur
-- TypeScript pour le typage
+```bash
+npm run start:dev
+```
+
+Une fois ces modifications faites, nous pourrons :
+1. Tester que l'API fonctionne correctement
+2. Commiter ces changements
+3. Intégrer votre frontend
+
+Voulez-vous que je procède à ces modifications ?
