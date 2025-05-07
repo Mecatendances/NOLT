@@ -33,78 +33,72 @@ export class DolibarrSyncService {
     const productFirstCategory = new Map<string, string>();
 
     if (categoryId) {
-      // Liste de toutes les sous-catégories FC Chalon (ex. 184, 185…)
-      let subCategories: any = [];
-      try {
-        subCategories = await this.dolibarrService.getCategoriesFilles(categoryId);
-
-        // Normaliser : convertir objet → tableau
-        if (!Array.isArray(subCategories)) {
-          if (subCategories && typeof subCategories === 'object') {
-            subCategories = Object.values(subCategories);
-          } else {
-            subCategories = [];
-          }
-        }
-      } catch (err) {
-        console.warn('⚠️ Impossible de récupérer les sous-catégories, on continue uniquement avec la catégorie racine');
-        subCategories = [];
+      // --- Approche simplifiée pour FC Chalon ---
+      console.log(`🔄 Synchronisation catégorie ${categoryId} et ses sous-catégories`);
+      
+      // 1. Récupérer toutes les sous-catégories via noltapi (fonctionne bien)
+      const categoriesFilles = await this.dolibarrService.getCategoriesFilles(categoryId);
+      let subCategories: any[] = [];
+      
+      // Normaliser la réponse en tableau
+      if (Array.isArray(categoriesFilles)) {
+        subCategories = categoriesFilles;
+      } else if (categoriesFilles && typeof categoriesFilles === 'object') {
+        subCategories = Object.values(categoriesFilles);
       }
+      
+      console.log(`✅ ${subCategories.length} sous-catégories récupérées`);
 
-      const catIds: string[] = [categoryId, ...subCategories.map((c: any) => String(c.id))];
-
-      // Récupérer les produits de chaque catégorie / sous-catégorie
-      const productPromises = catIds.map((id) => this.dolibarrService.getProductsByCategoryEndpoint(Number(id), true));
-      const productsArrays = await Promise.all(productPromises);
-
-      productsArrays.forEach((arr, idx) => {
-        const catId = catIds[idx];
-        arr.forEach((p: any) => {
-          const key = String(p.id);
-          if (!productFirstCategory.has(key)) {
-            productFirstCategory.set(key, catId);
-          }
-        });
-      });
-
-      dolibarrProducts = productsArrays.flat();
-
-      // Conserver l'unicité des produits (même id pouvant apparaître plusieurs fois)
-      const productMap = new Map<string, any>();
-      dolibarrProducts.forEach((p) => productMap.set(String(p.id), p));
-      dolibarrProducts = Array.from(productMap.values());
-
-      // Construire la liste des catégories rencontrées dans les produits
-      const categoryMap = new Map<string, { id: string; label: string }>();
-      dolibarrProducts.forEach((p: any) => {
-        if (Array.isArray(p.categories)) {
-          p.categories.forEach((c: any) => {
-            categoryMap.set(String(c.id), { id: String(c.id), label: c.label });
-          });
-        }
-      });
-
-      if (categoryMap.size > 0) {
-        catEntities = Array.from(categoryMap.values()).map((c) => {
+      // 2. Ajouter la catégorie parente à la liste
+      const allCatIds: string[] = [categoryId, ...subCategories.map((c: any) => String(c.id))];
+      
+      // 3. Créer et sauvegarder les entités catégories
+      const parentEntity = new CategoryEntity();
+      parentEntity.id = categoryId;
+      parentEntity.label = 'FC Chalon'; // On pourrait récupérer le label exact, mais pas critique
+      
+      catEntities = [
+        parentEntity,
+        ...subCategories.map((c: any) => {
           const entity = new CategoryEntity();
-          entity.id = c.id;
+          entity.id = String(c.id);
           entity.label = c.label;
+          entity.fkParent = categoryId;
+          entity.parent = parentEntity;
           return entity;
+        })
+      ];
+      
+      // Sauvegarder les catégories
+      await this.categoryRepository.save(catEntities);
+      console.log(`✅ ${catEntities.length} catégories sauvegardées en base`);
+      
+      // 4. Récupérer directement les produits pour chaque catégorie via l'endpoint qui fonctionne
+      const productsPromises = allCatIds.map(id => 
+        this.dolibarrService.getProducts(Number(id), 0, true)
+      );
+      
+      const productsArrays = await Promise.all(productsPromises);
+      
+      // 5. Mapper les produits avec leur première catégorie rencontrée
+      productsArrays.forEach((products, index) => {
+        const catId = allCatIds[index];
+        products.forEach(prod => {
+          const productId = String(prod.id);
+          if (!productFirstCategory.has(productId)) {
+            productFirstCategory.set(productId, catId);
+          }
         });
-      } else {
-        // Aucun lien remonté côté produits → on utilise la liste des sous-catégories
-        catEntities = subCategories.map((sc: any) => {
-          const entity = new CategoryEntity();
-          entity.id = String(sc.id);
-          entity.label = sc.label;
-          return entity;
-        });
-      }
-
-      // Sauvegarder immédiatement pour que les relations produits puissent se lier
-      if (catEntities.length > 0) {
-        await this.categoryRepository.save(catEntities);
-      }
+      });
+      
+      // 6. Fusionner et dédupliquer les produits
+      const uniqueProducts = new Map<string, any>();
+      productsArrays.flat().forEach(product => {
+        uniqueProducts.set(String(product.id), product);
+      });
+      
+      dolibarrProducts = Array.from(uniqueProducts.values());
+      console.log(`✅ ${dolibarrProducts.length} produits uniques récupérés`);
     } else {
       // --- Étape 1 : catégories (toutes)
       const dolibarrCategories = await this.dolibarrService.getCategories();
@@ -174,6 +168,7 @@ export class DolibarrSyncService {
     }
 
     await this.productRepository.save(prodEntities);
+    console.log(`✅ ${prodEntities.length} produits sauvegardés en base`);
 
     return {
       categories: catEntities.length,
