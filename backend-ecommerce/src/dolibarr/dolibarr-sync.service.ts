@@ -34,11 +34,21 @@ export class DolibarrSyncService {
 
     if (categoryId) {
       // Liste de toutes les sous-catégories FC Chalon (ex. 184, 185…)
-      let subCategories: any[] = [];
+      let subCategories: any = [];
       try {
         subCategories = await this.dolibarrService.getCategoriesFilles(categoryId);
+
+        // Normaliser : convertir objet → tableau
+        if (!Array.isArray(subCategories)) {
+          if (subCategories && typeof subCategories === 'object') {
+            subCategories = Object.values(subCategories);
+          } else {
+            subCategories = [];
+          }
+        }
       } catch (err) {
         console.warn('⚠️ Impossible de récupérer les sous-catégories, on continue uniquement avec la catégorie racine');
+        subCategories = [];
       }
 
       const catIds: string[] = [categoryId, ...subCategories.map((c: any) => String(c.id))];
