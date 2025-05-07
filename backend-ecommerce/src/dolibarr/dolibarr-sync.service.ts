@@ -89,13 +89,17 @@ export class DolibarrSyncService {
             // 4. Récupérer directement les produits pour chaque catégorie via l'endpoint qui fonctionne
             const productsPromises = allCatIds.map(id => 
               this.dolibarrService.getProducts(Number(id), 0, true)
+              .catch(error => {
+                console.log(`⚠️ Catégorie ${id} sans produits (${error.message})`);
+                return []; // Retourner un tableau vide en cas d'erreur
+              })
             );
             
-            const productsArrays = await Promise.all(productsPromises);
-            console.log('productsArrays:', productsArrays.map(a => a.length));
+            const productsResults = await Promise.all(productsPromises);
+            console.log('productsResults:', productsResults.map(a => a.length));
             
             // 5. Mapper les produits avec leur première catégorie rencontrée
-            productsArrays.forEach((products, index) => {
+            productsResults.forEach((products, index) => {
               const catId = allCatIds[index];
               products.forEach(prod => {
                 const productId = String(prod.id);
@@ -107,7 +111,7 @@ export class DolibarrSyncService {
             
             // 6. Fusionner et dédupliquer les produits
             const uniqueProducts = new Map<string, any>();
-            productsArrays.flat().forEach(product => {
+            productsResults.flat().forEach(product => {
               uniqueProducts.set(String(product.id), product);
             });
             
