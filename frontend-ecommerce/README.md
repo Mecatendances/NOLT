@@ -1,83 +1,37 @@
-# Documentation NOLT 🏃‍♂️
+# Frontend Ecommerce FC Chalon
 
-[... contenu précédent jusqu'à la section Installation ...]
+## Prérequis
+- Node.js (v18 ou supérieur recommandé)
+- npm ou yarn
 
-## Installation et démarrage
-
-### Prérequis
-- Node.js 18+ installé
-- npm 9+ installé
-- Un éditeur de code (VS Code recommandé)
-
-### 1. Installation du projet
+## Installation
 
 ```bash
-# Cloner le projet
-git clone [url-du-repo]
-cd [nom-du-projet]
-
-# Installer les dépendances
+cd frontend-ecommerce
 npm install
 ```
 
-### 2. Configuration de l'environnement
+## Lancement du projet
 
-```bash
-# Copier le fichier d'exemple des variables d'environnement
-cp .env.example .env
-```
-
-Éditer le fichier `.env` avec vos valeurs :
-
-```env
-# Dolibarr
-DOLIBARR_URL=http://votre-dolibarr.com/api
-DOLIBARR_API_KEY=votre_api_key
-DOLIBARR_WAREHOUSE_ID=1
-
-# WordPress
-WP_URL=http://votre-wordpress.com
-JWT_SECRET=votre_secret_jwt
-
-# AppViz Configurateur
-APPVIZ_URL=http://api.appviz.com
-APPVIZ_API_KEY=votre_api_key
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# Server
-PORT=3000
-```
-
-### 3. Démarrage en développement
-
-Ouvrir deux terminaux :
-
-Terminal 1 (Frontend) :
 ```bash
 npm run dev
 ```
 
-Terminal 2 (Backend) :
-```bash
-npm run server
-```
+Le frontend sera accessible par défaut sur [http://localhost:5173](http://localhost:5173)
 
-L'application sera accessible sur :
-- Frontend : http://localhost:5173
-- Backend : http://localhost:3000
+## Fonctionnalités principales
+- Affichage dynamique des sous-catégories de la boutique FC Chalon dès l'ouverture de la page `/public/shops`.
+- Récupération des sous-catégories via l'API `/api/dolibarr/noltapi/categoriesFilles/183`.
+- Affichage des produits par sous-catégorie (filtrage dynamique).
+- Plus aucun fallback de données mockées ni de composant de debug.
 
-### 4. Comptes de test
+## Dépannage
+- Si les sous-catégories ne s'affichent pas, vérifiez que le backend est bien lancé et que l'API répond.
+- En cas de problème de commit avec Husky/commitlint, utilisez l'option `--no-verify` pour bypasser temporairement les hooks.
 
-Pour tester l'application, utilisez les comptes suivants :
+## Déploiement
+- Toutes les modifications sont à pousser sur la branche `feat/fcchalon-clean`.
 
-- **Admin NOLT** :
-  - Email : admin@nolt.io
-  - Mot de passe : password
+---
 
-- **Utilisateur** :
-  - Email : user@example.com
-  - Mot de passe : password
-
-[... reste du contenu ...]
+Pour toute question, contactez l'équipe technique NOLT.
