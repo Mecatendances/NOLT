@@ -69,6 +69,11 @@ export class DolibarrSyncService {
         entity.label = c.label;
         return entity;
       });
+
+      // Sauvegarder immédiatement pour que les relations produits puissent se lier
+      if (catEntities.length > 0) {
+        await this.categoryRepository.save(catEntities);
+      }
     } else {
       // --- Étape 1 : catégories (toutes)
       const dolibarrCategories = await this.dolibarrService.getCategories();
@@ -97,11 +102,6 @@ export class DolibarrSyncService {
 
       // Tous les produits
       dolibarrProducts = await this.dolibarrService.getProducts(undefined, 0, true);
-    }
-
-    // Upsert des catégories (pour le mode filtré)
-    if (catEntities.length > 0) {
-      await this.categoryRepository.save(catEntities);
     }
 
     const prodEntities: ProductEntity[] = [];
