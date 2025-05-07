@@ -6,6 +6,8 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Définir un préfixe global pour toutes les routes
+  app.setGlobalPrefix('api');
   
   // Configuration CORS pour le frontend
   app.enableCors({
@@ -14,12 +16,12 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT || 4000;
+  const port = process.env.PORT || 3000;
   
   await app.listen(port, '0.0.0.0');
   console.log(`
 🚀 API démarrée sur : http://localhost:${port}/api
-  `);
+`);
 }
-bootstrap();
 
+bootstrap();

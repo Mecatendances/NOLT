@@ -2,7 +2,7 @@ import { Controller, Get, Query, Param } from '@nestjs/common';
 import { DolibarrService } from './dolibarr.service';
 import { DolibarrProduct, CategoryTree } from './interfaces';
 
-@Controller('api/dolibarr')
+@Controller('dolibarr')
 export class DolibarrController {
   constructor(
     private readonly dolibarrService: DolibarrService
@@ -36,8 +36,8 @@ export class DolibarrController {
     return this.dolibarrService.getCategoryTree();
   }
 
-  @Get('categories/:id/products')
-  async getCategoryProducts(@Param('id') categoryId: string) {
-    return this.dolibarrService.getCategoryProducts(categoryId);
+  @Get('noltapi/categoriesFilles/:id')
+  async getCategoriesFilles(@Param('id') categoryId: string) {
+    return this.dolibarrService.getCategoriesFilles(categoryId);
   }
 }

@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Thunder';
+  src: url('https://db.onlinewebfonts.com/t/1c587cd97662ab09cb8ba87a1299ed44?family=Thunder-SemiBoldLCItalic') format('woff2');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@layer base {
+  html {
+    font-family: 'Montserrat', sans-serif;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Thunder', sans-serif;
+    font-weight: 700;
+    font-style: italic;
+  }
+}
