@@ -364,6 +364,10 @@ export class DolibarrService {
       console.warn('cat-products non disponible, fallback sur /products');
       return this.getProducts(categoryId, 0, includeStock);
     } catch (err) {
+      if (err?.response?.status === 404) {
+        console.warn(`cat-products 404 pour la catégorie ${categoryId} – fallback /products?category`);
+        return this.getProducts(categoryId, 0, includeStock);
+      }
       console.error('Erreur cat-products', err.response?.data || err.message);
       return [];
     }
