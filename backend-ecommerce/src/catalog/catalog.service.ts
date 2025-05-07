@@ -17,18 +17,21 @@ export class CatalogService {
 
   async getProducts(categoryId?: string): Promise<ProductEntity[]> {
     if (categoryId) {
-      return this.productRepository.find({
-        where: { category: { id: categoryId } },
-        relations: ['category'],
-      });
+      return this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.categories', 'category')
+        .where('category.id = :categoryId', { categoryId })
+        .getMany();
     }
-    return this.productRepository.find({ relations: ['category'] });
+    return this.productRepository.find({ 
+      relations: ['categories'] 
+    });
   }
 
   async getProduct(id: string): Promise<ProductEntity | null> {
     return this.productRepository.findOne({
       where: { id },
-      relations: ['category'],
+      relations: ['categories'],
     });
   }
 

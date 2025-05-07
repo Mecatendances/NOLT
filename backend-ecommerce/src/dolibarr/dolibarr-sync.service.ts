@@ -189,7 +189,12 @@ export class DolibarrSyncService {
           if (mainCatId) {
             try {
               const catRef = await this.categoryRepository.findOne({ where: { id: mainCatId } });
-              entity.category = catRef ?? this.categoryRepository.create({ id: mainCatId });
+              if (catRef) {
+                entity.categories = [catRef];
+              } else {
+                const newCategory = this.categoryRepository.create({ id: mainCatId });
+                entity.categories = [newCategory];
+              }
             } catch (catLookupError) {
               console.error(`❌ Erreur recherche catégorie ${mainCatId}:`, catLookupError);
             }
