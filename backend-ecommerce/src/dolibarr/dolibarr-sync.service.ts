@@ -146,7 +146,8 @@ export class DolibarrSyncService {
       }
 
       if (mainCatId) {
-        entity.category = await this.categoryRepository.findOne({ where: { id: mainCatId } });
+        const catRef = await this.categoryRepository.findOne({ where: { id: mainCatId } });
+        entity.category = catRef ?? this.categoryRepository.create({ id: mainCatId });
       }
 
       prodEntities.push(entity);
