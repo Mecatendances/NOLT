@@ -35,7 +35,7 @@ export const shopApi = {
   // Produits
   getProducts: async (options?: { category?: string }): Promise<Product[]> => {
     try {
-      let url = '/dolibarr/products';
+      let url = '/catalog/products';
       const params: any = {};
       if (options && options.category) {
         params.category = options.category;
@@ -46,11 +46,11 @@ export const shopApi = {
         id: Number(prod.id),
         ref: prod.ref,
         label: prod.label,
-        price: prod.price_ttc_number ?? parseFloat(prod.price),
+        price: parseFloat(prod.priceTtc ?? prod.price_ttc ?? prod.price ?? '0'),
         stock: prod.stock ?? 0,
-        category: prod.category ?? '',
+        category: prod.category?.id ?? prod.category ?? '',
         description: prod.description,
-        image_url: Array.isArray(prod.image_url) ? prod.image_url[0] : undefined,
+        image_url: prod.imageUrl ?? (Array.isArray(prod.image_url) ? prod.image_url[0] : undefined),
       }));
     } catch (error) {
       console.error('Erreur lors de la récupération des produits', error);
@@ -72,7 +72,7 @@ export const shopApi = {
   // Récupérer la liste des catégories Dolibarr
   getCategories: async (): Promise<{ id: string; label: string }[]> => {
     try {
-      const response = await api.get('/dolibarr/categories');
+      const response = await api.get('/catalog/categories');
       return (response.data as any[]).map(cat => ({ id: String(cat.id), label: cat.label }));
     } catch (error) {
       console.error('Erreur lors de la récupération des catégories', error);
@@ -87,7 +87,7 @@ export const shopApi = {
       
       // Liste des endpoints à essayer
       const endpoints = [
-        `/dolibarr/noltapi/categoriesFilles/${categoryId}`
+        `/catalog/categories?parent=${categoryId}`
       ];
       
       // Essayer chaque endpoint jusqu'à ce qu'un fonctionne
@@ -108,11 +108,11 @@ export const shopApi = {
                 return response.data[key];
               }
             }
-            // Nouveau : transformer l'objet en tableau si besoin
-            if (Object.values(response.data).length > 0 && typeof Object.values(response.data)[0] === 'object') {
-              const categoriesArray = Object.values(response.data);
-              console.log('✅ Données extraites des valeurs de l\'objet réponse', categoriesArray);
-              return categoriesArray;
+            // NOUVEAU : transformer l'objet en tableau si besoin
+            const values = Object.values(response.data);
+            if (values.length > 0 && typeof values[0] === 'object') {
+              console.log('✅ Données extraites des valeurs de l\'objet réponse', values);
+              return values;
             }
           }
           
