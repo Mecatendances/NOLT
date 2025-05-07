@@ -28,9 +28,9 @@ export class DolibarrSyncService {
    * @returns nombre total d'éléments synchronisés
    */
   async sync(categoryId?: string): Promise<SyncResult> {
-    // Si on souhaite filtrer par catégorie (ex. FC Chalon = 183)
     let dolibarrProducts: any[] = [];
     let catEntities: CategoryEntity[] = [];
+    const productFirstCategory = new Map<string, string>();
 
     if (categoryId) {
       // Liste de toutes les sous-catégories FC Chalon (ex. 184, 185…)
@@ -46,6 +46,17 @@ export class DolibarrSyncService {
       // Récupérer les produits de chaque catégorie / sous-catégorie
       const productPromises = catIds.map((id) => this.dolibarrService.getProducts(Number(id), 0, true));
       const productsArrays = await Promise.all(productPromises);
+
+      productsArrays.forEach((arr, idx) => {
+        const catId = catIds[idx];
+        arr.forEach((p: any) => {
+          const key = String(p.id);
+          if (!productFirstCategory.has(key)) {
+            productFirstCategory.set(key, catId);
+          }
+        });
+      });
+
       dolibarrProducts = productsArrays.flat();
 
       // Conserver l'unicité des produits (même id pouvant apparaître plusieurs fois)
@@ -127,9 +138,14 @@ export class DolibarrSyncService {
       // Tentative de récupération d'une URL d'image si disponible
       entity.imageUrl = (prod?.image || prod?.imageUrl || prod?.images?.[0]?.url) ?? undefined;
 
-      // Association à la première catégorie rencontrée (Dolibarr peut en avoir plusieurs)
+      let mainCatId: string | undefined;
       if (Array.isArray(prod.categories) && prod.categories.length > 0) {
-        const mainCatId = String(prod.categories[0].id);
+        mainCatId = String(prod.categories[0].id);
+      } else {
+        mainCatId = productFirstCategory.get(String(prod.id));
+      }
+
+      if (mainCatId) {
         entity.category = await this.categoryRepository.findOne({ where: { id: mainCatId } });
       }
 
