@@ -84,12 +84,22 @@ export class DolibarrSyncService {
         }
       });
 
-      catEntities = Array.from(categoryMap.values()).map((c) => {
-        const entity = new CategoryEntity();
-        entity.id = c.id;
-        entity.label = c.label;
-        return entity;
-      });
+      if (categoryMap.size > 0) {
+        catEntities = Array.from(categoryMap.values()).map((c) => {
+          const entity = new CategoryEntity();
+          entity.id = c.id;
+          entity.label = c.label;
+          return entity;
+        });
+      } else {
+        // Aucun lien remonté côté produits → on utilise la liste des sous-catégories
+        catEntities = subCategories.map((sc: any) => {
+          const entity = new CategoryEntity();
+          entity.id = String(sc.id);
+          entity.label = sc.label;
+          return entity;
+        });
+      }
 
       // Sauvegarder immédiatement pour que les relations produits puissent se lier
       if (catEntities.length > 0) {
