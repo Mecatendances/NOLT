@@ -340,4 +340,31 @@ export class DolibarrService {
       throw new Error(`Impossible de récupérer les catégories filles : ${error.message}`);
     }
   }
+
+  async getProductsByCategoryEndpoint(categoryId: number, includeStock = true) {
+    try {
+      const url = `${this.baseUrl}/categories/${categoryId}/products`;
+      const params: any = {
+        DOLAPIKEY: this.apiKey,
+        limit: 999999,
+        includestockdata: includeStock ? 1 : 0,
+        withcategories: 1
+      };
+      console.log(`📡 Requête Dolibarr cat-products: ${url}`, params);
+      const response = await this.httpService.axiosRef.get(url, { params });
+      if (!Array.isArray(response.data)) {
+        console.warn('Réponse inattendue cat-products', response.data);
+        return [];
+      }
+      return response.data.map(product => ({
+        ...product,
+        price_ht: parseFloat(product.price),
+        price_ttc_number: parseFloat(product.price_ttc),
+        stock: product.stock_reel ? parseInt(product.stock_reel) : 0,
+      }));
+    } catch (err) {
+      console.error('Erreur cat-products', err.response?.data || err.message);
+      return [];
+    }
+  }
 }

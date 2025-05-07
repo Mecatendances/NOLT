@@ -44,7 +44,7 @@ export class DolibarrSyncService {
       const catIds: string[] = [categoryId, ...subCategories.map((c: any) => String(c.id))];
 
       // Récupérer les produits de chaque catégorie / sous-catégorie
-      const productPromises = catIds.map((id) => this.dolibarrService.getProducts(Number(id), 0, true));
+      const productPromises = catIds.map((id) => this.dolibarrService.getProductsByCategoryEndpoint(Number(id), true));
       const productsArrays = await Promise.all(productPromises);
 
       productsArrays.forEach((arr, idx) => {
