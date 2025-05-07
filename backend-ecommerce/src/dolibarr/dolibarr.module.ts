@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
-import { DolibarrService } from './dolibarr.service';
+import { HttpModule } from '@nestjs/axios';
 import { DolibarrController } from './dolibarr.controller';
+import { DolibarrService } from './dolibarr.service';
 
 @Module({
+  imports: [
+    HttpModule
+  ],
   controllers: [DolibarrController],
   providers: [DolibarrService],
-  exports: [DolibarrService] // Permet d’utiliser le service dans d’autres modules
+  exports: [DolibarrService] // Export du service pour qu'il soit disponible dans d'autres modules
 })
 export class DolibarrModule {}

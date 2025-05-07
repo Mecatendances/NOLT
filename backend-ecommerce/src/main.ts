@@ -4,12 +4,22 @@ dotenv.config(); // ✅ FORÇAGE du chargement de .env
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const port = process.env.PORT || 4000; // Utiliser 4000 par défaut
-  await app.listen(port, '0.0.0.0'); // Écoute sur toutes les interfaces
-  console.log(`🚀 Server running on http://localhost:${port}`);
+  
+  // Configuration CORS pour le frontend
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
+  const port = process.env.PORT || 4000;
+  
+  await app.listen(port, '0.0.0.0');
+  console.log(`
+🚀 API démarrée sur : http://localhost:${port}/api
+  `);
 }
 bootstrap();
 
