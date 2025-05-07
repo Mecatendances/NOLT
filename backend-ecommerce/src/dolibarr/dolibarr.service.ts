@@ -21,7 +21,10 @@ export class DolibarrService {
 
   async getProducts(categoryId?: number, page = 0, includeStock = false) {
     try {
-      const url = `${this.baseUrl}/products`;
+      // L'API semble répondre directement depuis l'URL non-normalisée
+      const externalApiUrl = 'https://dbdev.wearenolt.net/htdocs/api/index.php';
+      const url = `${externalApiUrl}/products`;
+      
       const params: any = {
         DOLAPIKEY: this.apiKey,
         limit: 999999,
