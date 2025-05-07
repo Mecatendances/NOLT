@@ -295,52 +295,49 @@ export class DolibarrService {
     }
   }
 
-  async getCategoryProducts(categoryId: string): Promise<DolibarrProduct[]> {
+  async getCategoriesFilles(categoryId: string): Promise<any> {
     try {
-      const url = `${this.baseUrl}/categories/${categoryId}/objects`;
-      const params = { 
-        DOLAPIKEY: this.apiKey,
-        type: 'product'
-      };
-
-      console.log(`📡 Requête vers Dolibarr: ${url} avec paramètres:`, params);
-
-      const response = await this.httpService.axiosRef.get(url, { params });
-
-      if (!Array.isArray(response.data)) {
-        console.error('⚠️ Réponse inattendue:', response.data);
-        throw new Error('Réponse invalide reçue de Dolibarr');
-      }
-
-      // Si nous avons des IDs de produits, nous devons récupérer les détails de chaque produit
-      const productIds = response.data;
-      const products: DolibarrProduct[] = [];
-
-      // Récupérer les détails de chaque produit
-      for (const productId of productIds) {
+      // Essayer d'abord l'API réelle
+      const externalApiUrl = 'https://dbdev.wearenolt.net/htdocs/api/index.php';
+      console.log(`📡 [DEBUG] Tentative d'appel à l'API réelle: ${externalApiUrl}/noltapi/categoriesFilles/${categoryId}`);
+      
+      try {
+        // Appel à l'API réelle
+        const response = await this.httpService.axiosRef.get(
+          `${externalApiUrl}/noltapi/categoriesFilles/${categoryId}`,
+          { 
+            params: { DOLAPIKEY: this.apiKey },
+            timeout: 10000
+          }
+        );
+        
+        console.log(`✅ [DEBUG] API réelle a répondu avec statut ${response.status}`);
+        return response.data;
+      } catch (apiError) {
+        console.error(`❌ [DEBUG] Échec de l'API réelle: ${apiError.message}`);
+        
+        // En cas d'échec, essayer l'API standard categories
         try {
-          const productResponse = await this.httpService.axiosRef.get(
-            `${this.baseUrl}/products/${productId}`,
-            { params: { DOLAPIKEY: this.apiKey } }
+          console.log(`📡 [DEBUG] Tentative avec l'endpoint categories standard`);
+          const categoriesResponse = await this.httpService.axiosRef.get(
+            `${externalApiUrl}/categories/${categoryId}/children`,
+            { 
+              params: { DOLAPIKEY: this.apiKey },
+              timeout: 10000
+            }
           );
-
-          const product = productResponse.data;
-          products.push({
-            ...product,
-            price_ht: parseFloat(product.price),
-            price_ttc_number: parseFloat(product.price_ttc),
-            stock: product.stock_reel ? parseInt(product.stock_reel) : 0
-          });
-        } catch (error) {
-          console.warn(`⚠️ Impossible de récupérer les détails du produit ${productId}:`, error.message);
+          
+          console.log(`✅ [DEBUG] Endpoint categories a répondu avec statut ${categoriesResponse.status}`);
+          return categoriesResponse.data;
+        } catch (categoriesError) {
+          console.error(`❌ [DEBUG] Échec de l'endpoint categories: ${categoriesError.message}`);
+          // Plus de fallback, on lève une erreur
+          throw new Error(`Impossible de récupérer les catégories filles : ${categoriesError.message}`);
         }
       }
-
-      console.log(`✅ Produits récupérés pour la catégorie ${categoryId} (${products.length} résultats)`);
-      return products;
     } catch (error) {
-      console.error(`❌ Erreur lors de la récupération des produits de la catégorie ${categoryId}:`, error.message);
-      throw new Error(`Impossible de récupérer les produits de la catégorie : ${error.message}`);
+      console.error(`❌ Erreur lors de la récupération des catégories filles ${categoryId}:`, error.message);
+      throw new Error(`Impossible de récupérer les catégories filles : ${error.message}`);
     }
   }
 }
