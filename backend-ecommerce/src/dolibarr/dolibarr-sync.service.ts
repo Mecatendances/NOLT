@@ -114,9 +114,13 @@ export class DolibarrSyncService {
 
       // Les méthodes utilitaires du service ont déjà casté les prix/stock.
       // On garde un fallback en cas d'évolution de l'API.
-      entity.priceHt = typeof prod.price_ht === 'number' ? prod.price_ht : parseFloat(prod.price);
-      entity.priceTtc = typeof prod.price_ttc_number === 'number' ? prod.price_ttc_number : parseFloat(prod.price_ttc);
-      entity.stock = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock_reel || '0', 10);
+      const priceHt = typeof prod.price_ht === 'number' ? prod.price_ht : parseFloat(prod.price);
+      const priceTtc = typeof prod.price_ttc_number === 'number' ? prod.price_ttc_number : parseFloat(prod.price_ttc);
+      const stockVal = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock_reel || '0', 10);
+
+      entity.priceHt = Number.isFinite(priceHt) ? priceHt : 0;
+      entity.priceTtc = Number.isFinite(priceTtc) ? priceTtc : 0;
+      entity.stock = Number.isFinite(stockVal) ? stockVal : 0;
 
       entity.description = prod.description;
 
