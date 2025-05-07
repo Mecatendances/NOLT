@@ -1,11 +1,13 @@
 import { Controller, Get, Query, Param } from '@nestjs/common';
 import { DolibarrService } from './dolibarr.service';
+import { DolibarrSyncService } from './dolibarr-sync.service';
 import { DolibarrProduct, CategoryTree } from './interfaces';
 
 @Controller('dolibarr')
 export class DolibarrController {
   constructor(
-    private readonly dolibarrService: DolibarrService
+    private readonly dolibarrService: DolibarrService,
+    private readonly dolibarrSyncService: DolibarrSyncService
   ) {}
 
   // Produits
@@ -39,5 +41,10 @@ export class DolibarrController {
   @Get('noltapi/categoriesFilles/:id')
   async getCategoriesFilles(@Param('id') categoryId: string) {
     return this.dolibarrService.getCategoriesFilles(categoryId);
+  }
+
+  @Get('sync')
+  async syncDolibarr(@Query('category') categoryId?: string) {
+    return this.dolibarrSyncService.sync(categoryId);
   }
 }
