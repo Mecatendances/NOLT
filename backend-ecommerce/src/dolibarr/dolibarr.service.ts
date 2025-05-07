@@ -352,16 +352,17 @@ export class DolibarrService {
       };
       console.log(`📡 Requête Dolibarr cat-products: ${url}`, params);
       const response = await this.httpService.axiosRef.get(url, { params });
-      if (!Array.isArray(response.data)) {
-        console.warn('Réponse inattendue cat-products', response.data);
-        return [];
+      if (Array.isArray(response.data)) {
+        return response.data.map(product => ({
+          ...product,
+          price_ht: parseFloat(product.price),
+          price_ttc_number: parseFloat(product.price_ttc),
+          stock: product.stock_reel ? parseInt(product.stock_reel) : 0,
+        }));
       }
-      return response.data.map(product => ({
-        ...product,
-        price_ht: parseFloat(product.price),
-        price_ttc_number: parseFloat(product.price_ttc),
-        stock: product.stock_reel ? parseInt(product.stock_reel) : 0,
-      }));
+      // Fallback vers /products?category=
+      console.warn('cat-products non disponible, fallback sur /products');
+      return this.getProducts(categoryId, 0, includeStock);
     } catch (err) {
       console.error('Erreur cat-products', err.response?.data || err.message);
       return [];
