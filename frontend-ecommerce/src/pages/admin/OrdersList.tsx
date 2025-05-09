@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -38,6 +38,8 @@ interface Order {
 export function OrdersList() {
   const navigate = useNavigate();
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const { data, isLoading, error } = useQuery<Order[]>({
     queryKey: ['admin-orders'],
     queryFn: async () => {
@@ -46,6 +48,40 @@ export function OrdersList() {
       return res.json();
     }
   });
+
+  const toggleSelect = (orderId: string) => {
+    setSelectedIds(prev => prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]);
+  };
+
+  const handleAddToCampaign = async () => {
+    if (selectedIds.length === 0) return;
+    const name = window.prompt('Nom de la nouvelle campagne ?');
+    if (!name) return;
+
+    try {
+      // Créer la campagne
+      const createRes = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (!createRes.ok) throw new Error('Erreur création campagne');
+      const campaign = await createRes.json();
+
+      // Ajouter les commandes
+      await fetch(`/api/campaigns/${campaign.id}/add-orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: selectedIds })
+      });
+
+      alert('Campagne créée !');
+      setSelectedIds([]);
+      // invalidate queries if using react-query (will refetch automatically)
+    } catch (e) {
+      alert('Erreur lors de la création de la campagne');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -67,10 +103,24 @@ export function OrdersList() {
     <div>
       <h1 className="text-2xl font-thunder text-nolt-black mb-6">Commandes</h1>
 
+      <div className="mb-4 flex items-center gap-3">
+        <button
+          onClick={handleAddToCampaign}
+          disabled={selectedIds.length === 0}
+          className="px-4 py-2 rounded-lg bg-nolt-orange text-white hover:bg-nolt-yellow hover:text-nolt-black disabled:opacity-50"
+        >
+          Ajouter à une campagne
+        </button>
+        {selectedIds.length > 0 && (
+          <span className="text-sm text-gray-600">{selectedIds.length} sélectionnée(s)</span>
+        )}
+      </div>
+
       <div className="overflow-x-auto bg-white shadow-sm rounded-xl">
         <table className="min-w-full text-sm font-montserrat">
           <thead className="bg-gray-50 text-gray-700 uppercase text-xs">
             <tr>
+              <th className="px-2"></th>
               <th className="px-4 py-3 text-left">ID</th>
               <th className="px-4 py-3 text-left">Date</th>
               <th className="px-4 py-3 text-left">Client</th>
@@ -85,6 +135,9 @@ export function OrdersList() {
                 className="border-b last:border-none hover:bg-gray-50 cursor-pointer"
                 onClick={() => navigate(`/admin/orders/${order.id}`)}
               >
+                <td className="px-2 text-center" onClick={(e)=>{e.stopPropagation();toggleSelect(order.id);}}>
+                  <input type="checkbox" checked={selectedIds.includes(order.id)} onChange={()=>toggleSelect(order.id)} />
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap font-medium text-nolt-orange">{order.id.substring(0, 8)}…</td>
                 <td className="px-4 py-3">{format(new Date(order.createdAt), 'dd MMM yyyy', { locale: fr })}</td>
                 <td className="px-4 py-3">{order.user?.name ?? '—'}</td>

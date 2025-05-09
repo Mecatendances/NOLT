@@ -34,6 +34,11 @@ export function AdminLayout() {
       path: '/admin/orders',
       icon: ClipboardList,
     },
+    {
+      name: 'Campagnes',
+      path: '/admin/campaigns',
+      icon: ClipboardList,
+    },
     { 
       name: 'Pages', 
       path: '/admin/pages', 
