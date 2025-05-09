@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { DolibarrSyncService } from './dolibarr-sync.service';
+import { SyncResult } from './dolibarr-sync.service';
 
 @Injectable()
 export class DolibarrSyncTask {
@@ -15,7 +16,14 @@ export class DolibarrSyncTask {
     this.logger.log(`⏰ Sync quotidienne Dolibarr → BD (catégorie ${fcChalonId})`);
     try {
       const result = await this.syncService.sync(fcChalonId);
-      this.logger.log(`✅ Synchronisation terminée : ${result.categories} catégories, ${result.products} produits`);
+      
+      // Vérifier le type du résultat
+      if ('categories' in result && 'products' in result) {
+        this.logger.log(`✅ Synchronisation terminée : ${result.categories} catégories, ${result.products} produits`);
+      } else {
+        // Si c'est un message d'erreur
+        this.logger.log(`ℹ️ ${result.message || 'Synchronisation effectuée'}`);
+      }
     } catch (error) {
       this.logger.error('❌ Erreur de synchronisation Dolibarr', error);
     }

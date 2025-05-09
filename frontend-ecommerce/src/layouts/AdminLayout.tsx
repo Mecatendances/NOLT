@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   ShoppingBag, 
   FileText, 
+  ClipboardList,
   ChevronRight,
   LogOut,
   Plus
@@ -27,6 +28,11 @@ export function AdminLayout() {
       path: '/admin/shops', 
       icon: ShoppingBag,
       action: () => navigate('/admin/shops')
+    },
+    {
+      name: 'Commandes',
+      path: '/admin/orders',
+      icon: ClipboardList,
     },
     { 
       name: 'Pages', 

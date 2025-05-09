@@ -15,9 +15,15 @@ export function Checkout() {
     navigate('/public/shops');
   };
 
+  // Redirection si panier vide
+  React.useEffect(() => {
+    if (items.length === 0) {
+      navigate('/public/shops');
+    }
+  }, [items, navigate]);
+
   if (items.length === 0) {
-    navigate('/public/shops');
-    return null;
+    return null; // redirect handled above
   }
 
   return (
@@ -151,8 +157,8 @@ export function Checkout() {
             <div className="rounded-xl bg-white p-6 shadow-sm">
               <h2 className="font-thunder text-2xl mb-4 italic uppercase text-nolt-orange">Récapitulatif</h2>
               <div className="space-y-4">
-                {items.map(({ product, quantity }) => (
-                  <div key={product.id} className="flex items-center gap-4">
+                {items.map(({ product, quantity, size }) => (
+                  <div key={`${product.id}-${size || 'nosize'}`} className="flex items-center gap-4">
                     {product.image_url && (
                       <img
                         src={product.image_url}
@@ -163,6 +169,9 @@ export function Checkout() {
                     <div className="flex-1">
                       <h3 className="font-semibold font-montserrat">{product.label}</h3>
                       <p className="text-sm text-gray-500 font-montserrat">Quantité : {quantity}</p>
+                      {size && (
+                        <p className="text-sm text-gray-500 font-montserrat">Taille : {size}</p>
+                      )}
                     </div>
                     <span className="font-semibold font-montserrat text-nolt-orange">
                       {(product.price * quantity).toFixed(2)}€

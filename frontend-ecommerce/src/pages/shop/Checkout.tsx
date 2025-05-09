@@ -7,17 +7,66 @@ export function Checkout() {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Champs du formulaire
+  const [customerName, setCustomerName] = React.useState('');
+  const [customerEmail, setCustomerEmail] = React.useState('');
+  const [customerPhone, setCustomerPhone] = React.useState('');
+  const [address, setAddress] = React.useState('');
+  const [zipCode, setZipCode] = React.useState('');
+  const [city, setCity] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simuler une commande réussie
-    alert('Commande validée ! Merci de votre achat.');
-    clearCart();
-    navigate('/public/shops');
+
+    // Préparer le payload pour l'API
+    const orderPayload = {
+      customerName,
+      customerEmail,
+      customerPhone,
+      address,
+      zipCode,
+      city,
+      items: items.map(({ product, quantity, size }) => ({
+        productId: product.id,
+        quantity,
+        size,
+      }))
+    };
+
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload)
+      });
+
+      if (!res.ok) {
+        console.error(await res.text());
+        throw new Error('Erreur réseau');
+      }
+
+      const data = await res.json();
+      alert(`Commande validée ! Numéro : ${data.id}`);
+      clearCart();
+      navigate('/public/shops');
+    } catch (err) {
+      alert("Une erreur est survenue lors de la création de la commande. Veuillez réessayer.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  // Rediriger vers la liste des boutiques si le panier est vide
+  React.useEffect(() => {
+    if (items.length === 0) {
+      navigate('/public/shops');
+    }
+  }, [items, navigate]);
+
   if (items.length === 0) {
-    navigate('/public/shops');
-    return null;
+    return null; // la redirection est gérée dans le useEffect ci-dessus
   }
 
   return (
@@ -46,6 +95,8 @@ export function Checkout() {
                     <input
                       type="text"
                       required
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
                       className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-montserrat focus:ring-2 focus:ring-nolt-yellow focus:outline-none"
                     />
                   </div>
@@ -54,6 +105,8 @@ export function Checkout() {
                     <input
                       type="email"
                       required
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
                       className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-montserrat focus:ring-2 focus:ring-nolt-yellow focus:outline-none"
                     />
                   </div>
@@ -62,6 +115,8 @@ export function Checkout() {
                     <input
                       type="tel"
                       required
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
                       className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-montserrat focus:ring-2 focus:ring-nolt-yellow focus:outline-none"
                     />
                   </div>
@@ -77,6 +132,8 @@ export function Checkout() {
                     <input
                       type="text"
                       required
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
                       className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-montserrat focus:ring-2 focus:ring-nolt-yellow focus:outline-none"
                     />
                   </div>
@@ -86,6 +143,8 @@ export function Checkout() {
                       <input
                         type="text"
                         required
+                        value={zipCode}
+                        onChange={(e) => setZipCode(e.target.value)}
                         className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-montserrat focus:ring-2 focus:ring-nolt-yellow focus:outline-none"
                       />
                     </div>
@@ -94,6 +153,8 @@ export function Checkout() {
                       <input
                         type="text"
                         required
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
                         className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-montserrat focus:ring-2 focus:ring-nolt-yellow focus:outline-none"
                       />
                     </div>
@@ -139,9 +200,10 @@ export function Checkout() {
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-nolt-orange py-4 font-semibold text-white hover:bg-nolt-yellow hover:text-nolt-black transition-colors font-montserrat"
+                disabled={isSubmitting}
+                className="w-full rounded-xl bg-nolt-orange py-4 font-semibold text-white hover:bg-nolt-yellow hover:text-nolt-black transition-colors font-montserrat disabled:opacity-60"
               >
-                Payer {total.toFixed(2)}€
+                {isSubmitting ? 'Validation…' : `Valider ${total.toFixed(2)}€`}
               </button>
             </form>
           </div>
@@ -151,8 +213,8 @@ export function Checkout() {
             <div className="rounded-xl bg-white p-6 shadow-sm">
               <h2 className="font-thunder text-2xl mb-4 italic uppercase text-nolt-orange">Récapitulatif</h2>
               <div className="space-y-4">
-                {items.map(({ product, quantity }) => (
-                  <div key={product.id} className="flex items-center gap-4">
+                {items.map(({ product, quantity, size }) => (
+                  <div key={`${product.id}-${size || 'nosize'}`} className="flex items-center gap-4">
                     {product.image_url && (
                       <img
                         src={product.image_url}
@@ -163,6 +225,9 @@ export function Checkout() {
                     <div className="flex-1">
                       <h3 className="font-semibold font-montserrat">{product.label}</h3>
                       <p className="text-sm text-gray-500 font-montserrat">Quantité : {quantity}</p>
+                      {size && (
+                        <p className="text-sm text-gray-500 font-montserrat">Taille : {size}</p>
+                      )}
                     </div>
                     <span className="font-semibold font-montserrat text-nolt-orange">
                       {(product.price * quantity).toFixed(2)}€

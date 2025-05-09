@@ -41,7 +41,7 @@ export function ProductDetailPopup({ product, isOpen, onClose }: ProductDetailPo
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    addToCart(product, quantity, selectedSize || undefined);
     onClose();
   };
 

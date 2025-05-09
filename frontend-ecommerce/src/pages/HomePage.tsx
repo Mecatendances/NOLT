@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Calendar, Users, Trophy, ArrowRight } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export function HomePage() {
   return (
@@ -42,6 +43,16 @@ export function HomePage() {
               <Calendar className="h-5 w-5" />
               Calendrier des matchs
             </a>
+            {/* Lien admin commandes, seulement si connecté et admin */}
+            {useAuth().user?.isAdmin && (
+              <Link
+                to="/admin/orders"
+                className="px-8 py-3 bg-gray-800 text-white rounded-xl font-semibold flex items-center gap-2 hover:bg-gray-700 transition-colors text-lg font-montserrat"
+              >
+                Commandes admin
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
           </div>
         </div>
       </div>

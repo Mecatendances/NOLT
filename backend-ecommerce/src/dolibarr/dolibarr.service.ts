@@ -375,4 +375,32 @@ export class DolibarrService {
       return [];
     }
   }
+
+  async getProductCategories(productId: string | number): Promise<any[]> {
+    try {
+      const externalApiUrl = 'https://dbdev.wearenolt.net/htdocs/api/index.php';
+      const url = `${externalApiUrl}/products/${productId}/categories`;
+      
+      const params: any = {
+        DOLAPIKEY: this.apiKey,
+        sortfield: 's.rowid',
+        sortorder: 'ASC'
+      };
+
+      console.log(`📡 Requête vers Dolibarr pour les catégories du produit ${productId}: ${url}`);
+
+      const response = await this.httpService.axiosRef.get(url, { params });
+      
+      if (!Array.isArray(response.data)) {
+        console.warn(`⚠️ Réponse inattendue pour les catégories du produit ${productId}:`, response.data);
+        return [];
+      }
+      
+      console.log(`✅ ${response.data.length} catégories trouvées pour le produit ${productId}`);
+      return response.data;
+    } catch (err) {
+      console.error(`❌ Erreur récupération catégories du produit ${productId}:`, err.response?.data || err.message);
+      return [];
+    }
+  }
 }

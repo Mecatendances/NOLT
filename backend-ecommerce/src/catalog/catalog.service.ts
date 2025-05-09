@@ -16,16 +16,44 @@ export class CatalogService {
   /* Produits ------------------------------------------------------ */
 
   async getProducts(categoryId?: string): Promise<ProductEntity[]> {
+    console.log(`🔍 Recherche de produits ${categoryId ? `pour la catégorie ${categoryId}` : 'tous'}`);
+    
     if (categoryId) {
-      return this.productRepository
-        .createQueryBuilder('product')
-        .leftJoinAndSelect('product.categories', 'category')
-        .where('category.id = :categoryId', { categoryId })
-        .getMany();
+      try {
+        console.log(`📊 Exécution de la requête avec jointure sur la catégorie ${categoryId}`);
+        
+        // D'abord, vérifier si la catégorie existe
+        const categoryExists = await this.categoryRepository.findOne({ where: { id: categoryId } });
+        console.log(`🏷️ Catégorie ${categoryId} existe: ${!!categoryExists}`);
+        
+        // Ensuite, compter les associations dans product_categories
+        const count = await this.productRepository.manager.query(
+          'SELECT COUNT(*) FROM product_categories WHERE category_id = $1',
+          [categoryId]
+        );
+        console.log(`🔢 Nombre d'associations produit-catégorie pour ${categoryId}: ${count[0].count}`);
+        
+        // Exécuter la requête
+        const products = await this.productRepository
+          .createQueryBuilder('product')
+          .leftJoinAndSelect('product.categories', 'category')
+          .where('category.id = :categoryId', { categoryId })
+          .getMany();
+        
+        console.log(`📦 ${products.length} produits trouvés pour la catégorie ${categoryId}`);
+        return products;
+      } catch (error) {
+        console.error(`❌ Erreur lors de la recherche des produits par catégorie ${categoryId}:`, error);
+        throw error;
+      }
     }
-    return this.productRepository.find({ 
+    
+    console.log('📊 Récupération de tous les produits avec leurs catégories');
+    const allProducts = await this.productRepository.find({ 
       relations: ['categories'] 
     });
+    console.log(`📦 ${allProducts.length} produits trouvés au total`);
+    return allProducts;
   }
 
   async getProduct(id: string): Promise<ProductEntity | null> {

@@ -21,6 +21,8 @@ import { Dashboard } from './pages/admin/Dashboard';
 import { Pages } from './pages/admin/Pages';
 import { PageEditor } from './pages/admin/PageEditor';
 import { TestFCChalon } from './pages/TestFCChalon';
+import { OrdersList } from './pages/admin/OrdersList';
+import { OrderDetail } from './pages/admin/OrderDetail';
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,8 @@ function App() {
                 <Route path="shops" element={<ShopsList />} />
                 <Route path="shops/new" element={<CreateShop />} />
                 <Route path="pages" element={<Pages />} />
+                <Route path="orders" element={<OrdersList />} />
+                <Route path="orders/:id" element={<OrderDetail />} />
                 <Route path="pages/new" element={<PageEditor />} />
                 <Route path="pages/:id/edit" element={<PageEditor isEditing />} />
               </Route>

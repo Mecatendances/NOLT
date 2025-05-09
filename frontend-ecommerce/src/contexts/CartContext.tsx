@@ -4,13 +4,14 @@ import type { Product } from '../types/shop';
 interface CartItem {
   product: Product;
   quantity: number;
+  size?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
-  removeFromCart: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  addToCart: (product: Product, quantity?: number, size?: string) => void;
+  removeFromCart: (productId: number, size?: string) => void;
+  updateQuantity: (productId: number, quantity: number, size?: string) => void;
   clearCart: () => void;
   total: number;
   itemCount: number;
@@ -41,32 +42,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: Product, quantity: number = 1) => {
+  const addToCart = (product: Product, quantity: number = 1, size?: string) => {
     setItems(currentItems => {
-      const existingItem = currentItems.find(item => item.product.id === product.id);
+      const existingItem = currentItems.find(item => item.product.id === product.id && item.size === size);
       
       if (existingItem) {
         return currentItems.map(item =>
-          item.product.id === product.id
+          item.product.id === product.id && item.size === size
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
 
-      return [...currentItems, { product, quantity }];
+      return [...currentItems, { product, quantity, size }];
     });
   };
 
-  const removeFromCart = (productId: number) => {
-    setItems(currentItems => currentItems.filter(item => item.product.id !== productId));
+  const removeFromCart = (productId: number, size?: string) => {
+    setItems(currentItems => currentItems.filter(item => !(item.product.id === productId && (size ? item.size === size : true))));
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productId: number, quantity: number, size?: string) => {
     if (quantity < 1) return;
     
     setItems(currentItems =>
       currentItems.map(item =>
-        item.product.id === productId
+        item.product.id === productId && (size ? item.size === size : true)
           ? { ...item, quantity }
           : item
       )

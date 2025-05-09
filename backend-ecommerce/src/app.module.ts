@@ -10,6 +10,8 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CatalogModule } from './catalog/catalog.module';
+import { OrdersModule } from './orders/orders.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { CatalogModule } from './catalog/catalog.module';
     DatabaseModule,
     ScheduleModule.forRoot(),
     CatalogModule,
+    OrdersModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
