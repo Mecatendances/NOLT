@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 import { OrderEntity } from '../orders/order.entity';
+import { UserRole } from './user-role.enum';
 
 @Entity('users')
 export class UserEntity {
@@ -23,6 +24,12 @@ export class UserEntity {
 
   @Column({ nullable: true })
   city: string;
+
+  @Column({ select: false })
+  passwordHash: string;
+
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.CLIENT })
+  role: UserRole;
 
   @CreateDateColumn()
   createdAt: Date;

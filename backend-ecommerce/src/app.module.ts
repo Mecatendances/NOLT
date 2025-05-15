@@ -12,6 +12,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { CatalogModule } from './catalog/catalog.module';
 import { OrdersModule } from './orders/orders.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CampaignsModule } from './campaigns/campaigns.module';
     CatalogModule,
     OrdersModule,
     CampaignsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
