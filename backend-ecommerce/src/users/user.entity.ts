@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, ManyToMany } from 'typeorm';
 import { OrderEntity } from '../orders/order.entity';
 import { UserRole } from './user-role.enum';
+import { ShopEntity } from '../catalog/shop.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -36,4 +37,7 @@ export class UserEntity {
 
   @OneToMany(() => OrderEntity, (order) => order.user)
   orders: OrderEntity[];
+
+  @ManyToMany(() => ShopEntity, (shop) => shop.licensees)
+  licenseeShops: ShopEntity[];
 } 

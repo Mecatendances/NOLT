@@ -13,6 +13,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { OrdersModule } from './orders/orders.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { UsersModule } from './users/users.module';
+import { ShopsModule } from './catalog/shops.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module';
     OrdersModule,
     CampaignsModule,
     UsersModule,
+    ShopsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

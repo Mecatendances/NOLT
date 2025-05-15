@@ -4,14 +4,29 @@ import { Request, Response, NextFunction } from 'express';
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    const host = req.headers.host; // Ex: client1.monsite.com
-    const tenant = host?.split('.')[0]; // On extrait "client1"
+    const host = req.headers.host as string | undefined;
 
-    if (!tenant) {
-      return res.status(400).json({ message: 'Tenant ID missing in domain' });
+    if (!host) {
+      return res.status(400).json({ message: 'Host header missing' });
     }
 
-    req.headers['tenant_id'] = tenant; // On injecte le tenant ID dans la requête
+    // Exemple : fcchalon.wearenolt.net => slug = fcchalon
+    const baseDomain = process.env.BASE_DOMAIN || 'wearenolt.net';
+
+    let slug = host;
+    if (host.endsWith(baseDomain)) {
+      slug = host.replace(`.${baseDomain}`, '');
+    }
+
+    slug = slug.split('.')[0]; // garde uniquement le premier segment
+
+    if (!slug) {
+      return res.status(400).json({ message: 'Tenant slug not found' });
+    }
+
+    // On stocke dans l'objet requête pour les guards/services ultérieurs
+    (req as any).tenantSlug = slug;
+    req.headers['tenant_id'] = slug; // rétro-compat
     next();
   }
 }
