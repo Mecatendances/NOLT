@@ -1,9 +1,17 @@
+import { UserRole } from './userRole';
+
 export interface User {
-  id: number;
+  id: string;
   email: string;
   name: string;
-  role: 'admin' | 'user';
-  company?: string;
+  role: UserRole;
+  licenseeShops?: string[];
+  isAdmin?: boolean;
+  phone?: string;
+  address?: string;
+  zipCode?: string;
+  city?: string;
+  preferredClub?: string;
 }
 
 export interface AuthState {

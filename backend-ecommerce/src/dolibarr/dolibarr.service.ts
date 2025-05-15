@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Product, DolibarrProduct, DolibarrImage, CategoryTree } from './interfaces';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ProductEntity } from './entities/product.entity';
 
 @Injectable()
 export class DolibarrService {
@@ -10,7 +13,9 @@ export class DolibarrService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    @InjectRepository(ProductEntity)
+    private readonly productRepository: Repository<ProductEntity>,
   ) {
     this.baseUrl = this.configService.get<string>('DOLIBARR_API_URL');
     this.apiKey = this.configService.get<string>('DOLIBARR_API_KEY');
@@ -46,20 +51,26 @@ export class DolibarrService {
         throw new Error('Réponse invalide reçue de Dolibarr');
       }
 
-      // Traiter les produits avec leurs catégories
+      // Récupérer les données locales pour tous les produits Dolibarr
+      const dolibarrIds = response.data.map((p: any) => String(p.id));
+      const localProducts = await this.productRepository.findByIds(dolibarrIds);
+      const localMap = new Map(localProducts.map(p => [String(p.id), p]));
+
+      // Traiter les produits avec leurs catégories et fusionner les champs locaux
       const productsWithCategories = response.data.map(product => {
         let categoryLabel = '-';
-        
         if (product.categories && Array.isArray(product.categories)) {
           categoryLabel = product.categories.map(cat => cat.label).join(', ');
         }
-
+        const local = localMap.get(String(product.id));
         return {
           ...product,
           price_ht: parseFloat(product.price),
           price_ttc_number: parseFloat(product.price_ttc),
           stock: product.stock_reel ? parseInt(product.stock_reel) : 0,
-          category: categoryLabel
+          category: categoryLabel,
+          webLabel: local?.webLabel ?? null,
+          imageUrl: local?.imageUrl ?? null,
         };
       });
 
@@ -402,5 +413,12 @@ export class DolibarrService {
       console.error(`❌ Erreur récupération catégories du produit ${productId}:`, err.response?.data || err.message);
       return [];
     }
+  }
+
+  async updateWebLabel(productId: string, webLabel: string) {
+    const product = await this.productRepository.findOneBy({ id: productId });
+    if (!product) throw new Error('Produit non trouvé');
+    product.webLabel = webLabel;
+    return this.productRepository.save(product);
   }
 }

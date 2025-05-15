@@ -3,26 +3,48 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
-  FileText, 
   ClipboardList,
   ChevronRight,
   LogOut,
-  Plus
+  LucideIcon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { UserRole } from '../types/userRole';
+
+// Définir un type pour les éléments de navigation
+interface NavItem {
+  name: string;
+  path: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  action?: () => void;
+}
 
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user, hasRole } = useAuth();
   
-  const navigation = [
+  // ID de la boutique actuelle (première boutique licenciée ou valeur par défaut)
+  const myShopId = user?.licenseeShops?.[0] ?? '183';
+  
+  // Navigation de base pour tous les administrateurs
+  const baseNavigation: NavItem[] = [
     { 
       name: 'Tableau de bord', 
       path: '/admin', 
       icon: LayoutDashboard,
       exact: true 
     },
+    {
+      name: 'Commandes',
+      path: '/admin/orders',
+      icon: ClipboardList
+    }
+  ];
+  
+  // Options supplémentaires pour le SUPERADMIN uniquement
+  const superAdminNavigation: NavItem[] = [
     { 
       name: 'Boutiques', 
       path: '/admin/shops', 
@@ -30,20 +52,31 @@ export function AdminLayout() {
       action: () => navigate('/admin/shops')
     },
     {
-      name: 'Commandes',
-      path: '/admin/orders',
-      icon: ClipboardList,
+      name: 'Campagnes',
+      path: '/admin/campaigns',
+      icon: ClipboardList
+    }
+  ];
+  
+  // Options pour les ADMIN standard
+  const adminNavigation: NavItem[] = [
+    { 
+      name: 'Produits', 
+      path: '/admin/shops', 
+      icon: ShoppingBag,
+      action: () => navigate('/admin/shops')
     },
     {
       name: 'Campagnes',
       path: '/admin/campaigns',
-      icon: ClipboardList,
-    },
-    { 
-      name: 'Pages', 
-      path: '/admin/pages', 
-      icon: FileText 
+      icon: ClipboardList
     }
+  ];
+  
+  // Sélectionner les options de navigation en fonction du rôle
+  const navigation: NavItem[] = [
+    ...baseNavigation,
+    ...(hasRole(UserRole.SUPERADMIN) ? superAdminNavigation : adminNavigation)
   ];
 
   const isActive = (path: string, exact = false) => {
@@ -60,12 +93,12 @@ export function AdminLayout() {
         <div className="flex flex-col h-full">
           <div className="p-6">
             <a 
-              href="https://www.fcchalon.com" 
+              href="https://wearenolt.com" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-2xl font-thunder text-nolt-orange hover:text-nolt-yellow transition-colors"
+              className="text-2xl font-thunder text-nolt-orange hover:text-orange-600 transition-colors"
             >
-              FC CHALON Admin
+              NOLT Admin
             </a>
           </div>
 
@@ -77,7 +110,7 @@ export function AdminLayout() {
                 className={`
                   w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors
                   ${isActive(item.path, item.exact)
-                    ? 'bg-gray-100 text-nolt-orange'
+                    ? 'bg-orange-50 text-nolt-orange'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }
                 `}
@@ -118,26 +151,18 @@ export function AdminLayout() {
             <h1 className="text-xl font-thunder text-gray-900">
               Administration
             </h1>
-            {location.pathname === '/admin/shops' && (
-              <Link 
-                to="/admin/shops/new"
-                className="flex items-center gap-2 bg-nolt-orange text-white px-4 py-2 rounded-lg hover:bg-nolt-yellow hover:text-nolt-black transition-colors"
-              >
-                <Plus className="h-5 w-5" />
-                Nouvelle boutique
-              </Link>
-            )}
+            {/* Bouton d'action rapide superadmin (suppprimé) */}
             <Link 
-              to="/public/shops" 
+              to="/" 
               className="text-gray-500 hover:text-nolt-orange transition-colors"
             >
-              Voir la boutique
+              Voir le site
             </Link>
           </div>
         </header>
 
         {/* Contenu */}
-        <main className="p-8 mt-16 mb-8">
+        <main className="p-8 mt-16">
           <Outlet />
         </main>
       </div>

@@ -84,10 +84,12 @@ export function Login() {
             {isLoading ? 'Connexion...' : 'Se connecter'}
           </button>
 
-          <div className="text-sm text-center text-gray-600">
-            <p>Pour la démo :</p>
-            <p>Admin FC Chalon : admin@fcchalon.com / password</p>
-            <p>Utilisateur : user@example.com / password</p>
+          <div className="text-sm text-center text-gray-600 space-y-1">
+            <p className="font-semibold">Identifiants de test :</p>
+            <p>Superadmin : <span className="font-mono">superadmin@nolt.com / password123</span></p>
+            <p>Admin FC Chalon : <span className="font-mono">admin@fcchalon.com / password</span></p>
+            <p>Licensee : <span className="font-mono">licensee@boutique.com / password</span></p>
+            <p>Client : <span className="font-mono">client@test.com / password</span></p>
           </div>
         </form>
       </div>

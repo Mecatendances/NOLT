@@ -26,7 +26,10 @@ export class UserEntity {
   @Column({ nullable: true })
   city: string;
 
-  @Column({ select: false })
+  @Column({ nullable: true })
+  preferredClub: string;
+
+  @Column({ select: false, nullable: true })
   passwordHash: string;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.CLIENT })

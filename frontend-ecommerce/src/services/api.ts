@@ -1,8 +1,22 @@
 import axios from 'axios';
 import { Product, Shop, CategoryTree } from '../types/shop';
 
-const api = axios.create({
-  baseURL: '/api'
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api',
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  const tenantId = localStorage.getItem('tenantId');
+  if (tenantId) {
+    config.headers = config.headers || {};
+    config.headers['X-Tenant-ID'] = tenantId;
+  }
+  return config;
 });
 
 // Données mock pour déboguer l'interface
@@ -33,25 +47,36 @@ initializeDefaultShops();
 
 export const shopApi = {
   // Produits
-  getProducts: async (options?: { category?: string }): Promise<Product[]> => {
+  getProducts: async (options?: { category?: string; shopId?: string }): Promise<Product[]> => {
     try {
-      let url = '/catalog/products';
+      let url = '/dolibarr/products';
       const params: any = {};
-      if (options && options.category) {
+      if (options?.category) {
         params.category = options.category;
       }
+      if (options?.shopId) {
+        params.shopId = options.shopId;
+      }
       const response = await api.get(url, { params });
-      // Mapper la réponse Dolibarr vers le type Product du frontend
-      return (response.data as any[]).map(prod => ({
-        id: Number(prod.id),
-        ref: prod.ref,
-        label: prod.label,
-        price: parseFloat(prod.priceTtc ?? prod.price_ttc ?? prod.price ?? '0'),
-        stock: prod.stock ?? 0,
-        category: prod.category?.id ?? prod.category ?? '',
-        description: prod.description,
-        image_url: prod.imageUrl ?? (Array.isArray(prod.image_url) ? prod.image_url[0] : undefined),
-      }));
+      console.log('Réponse API produits:', response.data);
+      const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api');
+      const staticBase = apiBase.replace(/\/api$/, '');
+      return (response.data as any[]).map(prod => {
+        console.log('Produit brut:', prod);
+        const mapped = {
+          id: Number(prod.id),
+          ref: prod.ref,
+          label: prod.label,
+          webLabel: prod.webLabel,
+          imageUrl: prod.imageUrl ? `${staticBase}${prod.imageUrl}` : undefined,
+          price: parseFloat(prod.priceTtc ?? prod.price_ttc ?? prod.price ?? '0'),
+          stock: prod.stock ?? 0,
+          category: prod.category?.id ?? prod.category ?? '',
+          description: prod.description,
+        };
+        console.log('Produit mappé:', mapped);
+        return mapped;
+      });
     } catch (error) {
       console.error('Erreur lors de la récupération des produits', error);
       return [];
@@ -72,7 +97,7 @@ export const shopApi = {
   // Récupérer la liste des catégories Dolibarr
   getCategories: async (): Promise<{ id: string; label: string }[]> => {
     try {
-      const response = await api.get('/catalog/categories');
+      const response = await api.get('/dolibarr/categories');
       return (response.data as any[]).map(cat => ({ id: String(cat.id), label: cat.label }));
     } catch (error) {
       console.error('Erreur lors de la récupération des catégories', error);
@@ -87,7 +112,9 @@ export const shopApi = {
       
       // Liste des endpoints à essayer
       const endpoints = [
-        `/catalog/categories?parent=${categoryId}`
+        `/dolibarr/noltapi/categoriesFilles/${categoryId}`,
+        `/dolibarr/categories/${categoryId}/children`,
+        `/dolibarr/categories?parent=${categoryId}`
       ];
       
       // Essayer chaque endpoint jusqu'à ce qu'un fonctionne
@@ -134,23 +161,8 @@ export const shopApi = {
   // Gestion des boutiques
   createShop: async (shopData: Partial<Shop>): Promise<Shop> => {
     try {
-      // Pour la démo, utiliser mockup avec délai simulé
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const newShop: Shop = {
-        id: Date.now(),
-        name: shopData.name || "",
-        description: shopData.description || "",
-        products: shopData.products || [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      const shops = getStoredShops();
-      shops.push(newShop);
-      setStoredShops(shops);
-
-      return newShop;
+      const response = await api.post('/shops', shopData);
+      return response.data;
     } catch (error) {
       console.error('Erreur lors de la création de la boutique', error);
       throw error;
@@ -159,69 +171,106 @@ export const shopApi = {
 
   getShops: async (): Promise<Shop[]> => {
     try {
-      // Pour la démo, utiliser mockup avec délai simulé
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return getStoredShops();
+      const response = await api.get('/shops');
+      return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des boutiques', error);
       return [];
     }
   },
 
-  getShop: async (id: number): Promise<Shop> => {
+  getShop: async (id: string): Promise<Shop> => {
     try {
-      // Pour la démo, utiliser mockup avec délai simulé
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const shops = getStoredShops();
-      const shop = shops.find(s => s.id === id);
-      if (!shop) {
-        throw new Error("Boutique non trouvée");
-      }
-      return shop;
+      const response = await api.get(`/shops/${id}`);
+      return response.data;
     } catch (error) {
       console.error(`Erreur lors de la récupération de la boutique ${id}`, error);
       throw error;
     }
   },
 
-  updateShop: async (id: number, shopData: Partial<Shop>): Promise<Shop> => {
+  updateShop: async (id: string, shopData: Partial<Shop>): Promise<Shop> => {
     try {
-      // Pour la démo, utiliser mockup avec délai simulé
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const shops = getStoredShops();
-      const index = shops.findIndex(s => s.id === id);
-      if (index === -1) {
-        throw new Error("Boutique non trouvée");
-      }
-
-      const updatedShop: Shop = {
-        ...shops[index],
-        ...shopData,
-        updated_at: new Date().toISOString()
-      };
-
-      shops[index] = updatedShop;
-      setStoredShops(shops);
-
-      return updatedShop;
+      const response = await api.put(`/shops/${id}`, shopData);
+      return response.data;
     } catch (error) {
       console.error(`Erreur lors de la mise à jour de la boutique ${id}`, error);
       throw error;
     }
   },
 
-  deleteShop: async (id: number): Promise<void> => {
+  deleteShop: async (id: string): Promise<void> => {
     try {
-      // Pour la démo, utiliser mockup avec délai simulé
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const shops = getStoredShops();
-      const filteredShops = shops.filter(s => s.id !== id);
-      setStoredShops(filteredShops);
+      await api.delete(`/shops/${id}`);
     } catch (error) {
       console.error(`Erreur lors de la suppression de la boutique ${id}`, error);
       throw error;
     }
-  }
+  },
+
+  updateProduct: async (shopId: string, productId: number, productData: Partial<Product>): Promise<Product> => {
+    try {
+      const response = await api.put(`/shops/${shopId}/products/${productId}`, productData);
+      return response.data;
+    } catch (error) {
+      console.error(`Erreur lors de la mise à jour du produit ${productId}`, error);
+      throw error;
+    }
+  },
+
+  uploadProductImage: async (productId: number, formData: FormData): Promise<Product> => {
+    try {
+      const response = await api.post(`/dolibarr/products/${productId}/image`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Erreur lors du téléchargement de l'image pour le produit ${productId}`, error);
+      throw error;
+    }
+  },
+
+  updateWebLabel: async (productId: string, webLabel: string): Promise<void> => {
+    try {
+      await api.patch(`/dolibarr/products/${productId}/web-label`, { webLabel });
+    } catch (error) {
+      console.error(`Erreur lors de la mise à jour du nom d'affichage web du produit ${productId}`, error);
+      throw error;
+    }
+  },
+};
+
+export const userApi = {
+  getMyOrders: async () => {
+    const response = await api.get('/orders/my');
+    return response.data as any[];
+  },
+  getMe: async () => {
+    const res = await api.get('/users/me');
+    return res.data;
+  },
+  updateMe: async (patch: any) => {
+    await api.put('/users/me', patch);
+  },
+};
+
+export interface AdminStats {
+  ordersCount: number;
+  shopsCount: number;
+  usersCount: number;
+  campaignsCount: number;
+  recentActivity: {
+    type: 'order' | 'shop' | 'campaign';
+    description: string;
+    date: string;
+  }[];
+}
+
+export const adminApi = {
+  getStats: async (): Promise<AdminStats> => {
+    const response = await api.get('/admin/stats');
+    return response.data;
+  },
 };

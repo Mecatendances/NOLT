@@ -18,7 +18,7 @@ export class OrdersService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async createOrder(dto: CreateOrderDto): Promise<OrderEntity> {
+  async createOrder(dto: CreateOrderDto, userId?: string): Promise<OrderEntity> {
     // Vérifier / charger les produits
     const items: OrderItemEntity[] = [];
     let total = 0;
@@ -36,18 +36,26 @@ export class OrdersService {
       items.push(item);
     }
 
-    // Récupérer ou créer le client
-    let user = await this.userRepository.findOne({ where: { email: dto.customerEmail } });
+    // Déterminer l'utilisateur associé
+    let user: UserEntity | null = null;
+    if (userId) {
+      user = await this.userRepository.findOne({ where: { id: userId } });
+    }
+
     if (!user) {
-      user = this.userRepository.create({
-        name: dto.customerName,
-        email: dto.customerEmail,
-        phone: dto.customerPhone,
-        address: dto.address,
-        zipCode: dto.zipCode,
-        city: dto.city,
-      });
-      await this.userRepository.save(user);
+      // Fallback à l'ancienne logique via email dans le DTO
+      user = await this.userRepository.findOne({ where: { email: dto.customerEmail } });
+      if (!user) {
+        user = this.userRepository.create({
+          name: dto.customerName,
+          email: dto.customerEmail,
+          phone: dto.customerPhone,
+          address: dto.address,
+          zipCode: dto.zipCode,
+          city: dto.city,
+        });
+        await this.userRepository.save(user);
+      }
     }
 
     const order = this.orderRepository.create({
@@ -65,5 +73,14 @@ export class OrdersService {
 
   async findOne(id: string): Promise<OrderEntity | null> {
     return this.orderRepository.findOne({ where: { id } });
+  }
+
+  async findByUser(userId: string): Promise<OrderEntity[]> {
+    return this.orderRepository.find({
+      where: {
+        user: { id: userId } as any,
+      },
+      order: { createdAt: 'DESC' },
+    });
   }
 } 

@@ -26,6 +26,9 @@ export class ProductEntity {
 
   @Column({ nullable: true })
   imageUrl?: string;
+
+  @Column({ nullable: true })
+  webLabel?: string; // Nom d'affichage web
   
   @ManyToMany(() => CategoryEntity)
   @JoinTable({

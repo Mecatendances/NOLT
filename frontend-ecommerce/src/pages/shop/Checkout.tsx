@@ -2,10 +2,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { ArrowLeft, CreditCard, Truck, Shield } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function Checkout() {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
 
   // Champs du formulaire
   const [customerName, setCustomerName] = React.useState('');
@@ -36,9 +38,13 @@ export function Checkout() {
 
     try {
       setIsSubmitting(true);
+      const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(orderPayload)
       });
 
@@ -49,8 +55,8 @@ export function Checkout() {
 
       const data = await res.json();
       alert(`Commande validée ! Numéro : ${data.id}`);
-      clearCart();
-      navigate('/public/shops');
+    clearCart();
+    navigate('/public/shops');
     } catch (err) {
       alert("Une erreur est survenue lors de la création de la commande. Veuillez réessayer.");
     } finally {
@@ -64,6 +70,18 @@ export function Checkout() {
       navigate('/public/shops');
     }
   }, [items, navigate]);
+
+  // champs form init after auth
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      setCustomerName(user.name || '');
+      setCustomerEmail(user.email || '');
+      setCustomerPhone(user.phone || '');
+      setAddress(user.address || '');
+      setZipCode(user.zipCode || '');
+      setCity(user.city || '');
+    }
+  }, [isAuthenticated, user]);
 
   if (items.length === 0) {
     return null; // la redirection est gérée dans le useEffect ci-dessus

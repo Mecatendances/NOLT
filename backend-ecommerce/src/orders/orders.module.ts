@@ -7,9 +7,14 @@ import { UserEntity } from '../users/user.entity';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { DolibarrModule } from '../dolibarr/dolibarr.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OrderEntity, OrderItemEntity, ProductEntity, UserEntity]), DolibarrModule],
+  imports: [
+    TypeOrmModule.forFeature([OrderEntity, OrderItemEntity, ProductEntity, UserEntity]),
+    DolibarrModule,
+    AuthModule,
+  ],
   providers: [OrdersService],
   controllers: [OrdersController],
   exports: [OrdersService],

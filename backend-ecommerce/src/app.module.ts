@@ -13,7 +13,8 @@ import { CatalogModule } from './catalog/catalog.module';
 import { OrdersModule } from './orders/orders.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { UsersModule } from './users/users.module';
-import { ShopsModule } from './catalog/shops.module';
+import { ShopsModule } from './shops/shops.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
@@ -30,6 +31,16 @@ import { ShopsModule } from './catalog/shops.module';
     CampaignsModule,
     UsersModule,
     ShopsModule,
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: 'postgres',
+      password: '80PmrhDuCIBO61Z1',
+      database: 'ecommerce',
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      synchronize: process.env.NODE_ENV !== 'production',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

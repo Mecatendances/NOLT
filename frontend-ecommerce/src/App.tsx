@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { RequireAuth } from './components/RequireAuth';
+import { TopBar } from './components/TopBar';
 
 // Layouts
 import { AdminLayout } from './layouts/AdminLayout';
@@ -24,6 +25,10 @@ import { TestFCChalon } from './pages/TestFCChalon';
 import { OrdersList } from './pages/admin/OrdersList';
 import { OrderDetail } from './pages/admin/OrderDetail';
 import { CampaignsList } from './pages/admin/CampaignsList';
+import { CampaignDetail } from './pages/admin/CampaignDetail';
+import { Profile } from './pages/Profile';
+import { ShopProducts } from './pages/admin/ShopProducts';
+import { AdminShopCatalog } from './pages/admin/AdminShopCatalog';
 
 const queryClient = new QueryClient();
 
@@ -33,6 +38,7 @@ function App() {
       <Router>
         <AuthProvider>
           <CartProvider>
+            <TopBar />
             <Routes>
               {/* Redirect root to the shop */}
               <Route path="/" element={<Navigate to="/home" replace />} />
@@ -50,12 +56,14 @@ function App() {
               {/* Routes d'administration */}
               <Route path="/admin" element={<RequireAuth requireAdmin={true}><AdminLayout /></RequireAuth>}>
                 <Route index element={<Dashboard />} />
-                <Route path="shops" element={<ShopsList />} />
+                <Route path="shops" element={<AdminShopCatalog />} />
                 <Route path="shops/new" element={<CreateShop />} />
+                <Route path="shops/:shopId/products" element={<ShopProducts />} />
                 <Route path="pages" element={<Pages />} />
                 <Route path="orders" element={<OrdersList />} />
                 <Route path="orders/:id" element={<OrderDetail />} />
                 <Route path="campaigns" element={<CampaignsList />} />
+                <Route path="campaigns/:id" element={<CampaignDetail />} />
                 <Route path="pages/new" element={<PageEditor />} />
                 <Route path="pages/:id/edit" element={<PageEditor isEditing />} />
               </Route>
@@ -64,6 +72,8 @@ function App() {
               <Route path="/shops" element={<RequireAuth><ShopsList /></RequireAuth>} />
               <Route path="/shops/:id" element={<RequireAuth><ShopDetails /></RequireAuth>} />
               <Route path="/create-shop" element={<RequireAuth requireAdmin={true}><CreateShop /></RequireAuth>} />
+
+              <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
             </Routes>
           </CartProvider>
         </AuthProvider>

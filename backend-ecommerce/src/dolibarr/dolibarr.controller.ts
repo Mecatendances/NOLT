@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Query, Param, Patch, Body } from '@nestjs/common';
 import { DolibarrService } from './dolibarr.service';
 import { DolibarrSyncService } from './dolibarr-sync.service';
 import { DolibarrProduct, CategoryTree } from './interfaces';
@@ -126,5 +126,10 @@ export class DolibarrController {
     } catch (error) {
       return { error: error.message };
     }
+  }
+
+  @Patch('products/:id/web-label')
+  async updateWebLabel(@Param('id') id: string, @Body('webLabel') webLabel: string) {
+    return this.dolibarrService.updateWebLabel(id, webLabel);
   }
 }

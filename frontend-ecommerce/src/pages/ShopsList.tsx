@@ -5,13 +5,25 @@ import { Store, Plus, ShoppingBag, Package } from 'lucide-react';
 import { shopApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import type { Shop } from '../types/shop';
+import { UserRole } from '../types/userRole';
 
 export function ShopsList() {
-  const { isAdmin } = useAuth();
+  const { user, hasRole } = useAuth();
   const { data: shops = [], isLoading } = useQuery<Shop[]>({
     queryKey: ['shops'],
     queryFn: shopApi.getShops
   });
+
+  // Filtrer les boutiques en fonction du rôle
+  const filteredShops = React.useMemo(() => {
+    if (hasRole(UserRole.SUPERADMIN)) {
+      return shops; // Les super admins voient toutes les boutiques
+    } else if (hasRole(UserRole.ADMIN)) {
+      return shops.filter(shop => shop.adminId === user?.id); // Les admins ne voient que leurs boutiques
+    } else {
+      return shops.filter(shop => user?.licenseeShops?.includes(shop.id)); // Les autres utilisateurs ne voient que les boutiques auxquelles ils sont associés
+    }
+  }, [shops, user, hasRole]);
 
   if (isLoading) {
     return (
@@ -27,8 +39,10 @@ export function ShopsList() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-thunder text-4xl text-nolt-black">Mes Boutiques 🏪</h1>
-        {isAdmin() && (
+        <h1 className="font-thunder text-4xl text-nolt-black">
+          {hasRole(UserRole.SUPERADMIN) ? "Toutes les Boutiques 🏪" : "Mes Boutiques 🏪"}
+        </h1>
+        {hasRole(UserRole.SUPERADMIN, UserRole.ADMIN) && (
           <Link
             to="/create-shop"
             className="flex items-center gap-2 rounded-xl bg-nolt-orange px-4 py-2 font-semibold text-white transition-all hover:bg-orange-600"
@@ -39,18 +53,20 @@ export function ShopsList() {
         )}
       </div>
 
-      {shops.length === 0 ? (
+      {filteredShops.length === 0 ? (
         <div className="rounded-xl bg-orange-50 p-8 text-center">
           <Store className="mx-auto h-16 w-16 text-nolt-orange" />
           <h2 className="mt-4 font-thunder text-2xl text-nolt-black">
-            {isAdmin() ? "Pas encore de boutique ?" : "Aucune boutique disponible"}
+            {hasRole(UserRole.SUPERADMIN, UserRole.ADMIN) 
+              ? "Pas encore de boutique ?" 
+              : "Aucune boutique disponible"}
           </h2>
           <p className="mt-2 text-gray-600">
-            {isAdmin() 
+            {hasRole(UserRole.SUPERADMIN, UserRole.ADMIN)
               ? "Crée ta première boutique pour commencer à vendre tes produits !"
               : "Les boutiques seront bientôt disponibles. Revenez plus tard !"}
           </p>
-          {isAdmin() && (
+          {hasRole(UserRole.SUPERADMIN, UserRole.ADMIN) && (
             <Link
               to="/create-shop"
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-nolt-orange px-6 py-3 font-semibold text-white transition-all hover:bg-orange-600"
@@ -61,35 +77,33 @@ export function ShopsList() {
           )}
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {shops.map((shop) => (
-            <div
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredShops.map((shop) => (
+            <Link
               key={shop.id}
-              className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:shadow-lg"
+              to={`/shops/${shop.id}`}
+              className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-nolt-yellow"
             >
-              <h3 className="font-thunder text-xl text-nolt-black">{shop.name}</h3>
-              <p className="mt-2 text-sm text-gray-600">{shop.description}</p>
-              
-              <div className="mt-4 flex items-center gap-4">
-                <span className="flex items-center gap-1 text-sm text-gray-600">
-                  <ShoppingBag className="h-4 w-4" />
-                  {shop.products.length} produits
-                </span>
-                <span className="flex items-center gap-1 text-sm text-gray-600">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-nolt-orange/10 p-3">
+                  <Store className="h-6 w-6 text-nolt-orange" />
+                </div>
+                <div>
+                  <h3 className="font-thunder text-xl text-nolt-black">{shop.name}</h3>
+                  <p className="mt-1 text-sm text-gray-500">{shop.description}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  {shop.products.reduce((total, p) => total + p.stock, 0)} articles
-                </span>
+                  <span>{shop.products?.length || 0} produits</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4" />
+                  <span>{shop.orders?.length || 0} commandes</span>
+                </div>
               </div>
-
-              <div className="mt-6 flex gap-2">
-                <Link
-                  to={`/shops/${shop.id}`}
-                  className="flex-1 rounded-lg bg-nolt-orange px-4 py-2 text-center font-semibold text-white transition-all hover:bg-orange-600"
-                >
-                  Gérer
-                </Link>
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

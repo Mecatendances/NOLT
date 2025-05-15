@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './user.entity';
@@ -34,5 +34,32 @@ export class UsersService implements OnApplicationBootstrap {
     });
     await this.userRepository.save(superAdmin);
     this.logger.log(`Compte superadmin créé (${superAdminEmail})`);
+  }
+
+  async validateCredentials(email: string, password: string) {
+    const user = await this.userRepository.createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.email = :email', { email })
+      .getOne();
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    delete (user as any).passwordHash;
+    return user;
+  }
+
+  async findById(id: string): Promise<UserEntity | null> {
+    return this.userRepository.findOne({ where: { id } });
+  }
+
+  async updateUser(id: string, patch: Partial<UserEntity>) {
+    await this.userRepository.update({ id }, patch);
   }
 } 

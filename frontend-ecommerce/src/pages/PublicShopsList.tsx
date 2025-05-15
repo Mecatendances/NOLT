@@ -82,29 +82,30 @@ export function PublicShopsList() {
   // Récupérer les produits de toutes les sous-catégories quand celles-ci sont chargées
   useEffect(() => {
     const loadAllProducts = async () => {
-      if (fcChalonSubcategories.length > 0) {
-        console.log('🔍 Chargement des produits de toutes les sous-catégories...');
-        
-        // Pour chaque sous-catégorie, récupérer ses produits et les associer à cette sous-catégorie
-        const allProductsPromises = fcChalonSubcategories.map(async (subcat) => {
+      if (fcChalonSubcategories.length === 0) return;
+
+      console.log('🔍 Chargement des produits de toutes les sous-catégories...');
+
+      const allProductsPromises = fcChalonSubcategories.map(async (subcat) => {
+        try {
           const products = await shopApi.getProducts({ category: subcat.id });
-          // Ajouter l'ID de la sous-catégorie à chaque produit
           return products.map((product: any) => ({
             ...product,
-            subCategoryIds: product.subCategoryIds ? 
-              [...product.subCategoryIds, subcat.id] : 
-              [subcat.id]
+            subCategoryIds: product.subCategoryIds ? [...product.subCategoryIds, subcat.id] : [subcat.id]
           }));
-        });
-        
-        try {
-          const results = await Promise.all(allProductsPromises);
-          const allProducts = results.flat();
-          console.log(`✅ ${allProducts.length} produits récupérés au total depuis les sous-catégories`);
-          setAllFcChalonProducts(allProducts);
-        } catch (error) {
-          console.error('❌ Erreur lors du chargement des produits:', error);
+        } catch (err) {
+          console.warn(`⚠️ Impossible de récupérer les produits pour la sous-catégorie ${subcat.id}`, err);
+          return [];
         }
+      });
+
+      try {
+        const results = await Promise.all(allProductsPromises);
+        const allProducts = results.flat();
+        console.log(`✅ ${allProducts.length} produits récupérés au total depuis les sous-catégories`);
+        setAllFcChalonProducts(allProducts);
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des produits:', error);
       }
     };
     
