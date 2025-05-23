@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { Store, ShoppingBag, Filter, Search, ChevronDown, ChevronRight, Grid, List, ChevronUp, Heart, Star, Plus, Minus, Package, ArrowRight } from 'lucide-react';
 import { shopApi } from '../../services/api';
 import { useCart } from '../../contexts/CartContext';
-import { CartDrawer } from '../../components/shop/CartDrawer';
+import { CartDrawer } from '../../components/CartDrawer';
 import { ProductDetailPopup } from '../../components/shop/ProductDetailPopup';
-import type { Product } from '../../types/shop';
+import type { Product, CategoryTree } from '../../types/shop';
+
+// Type pour les catégories d'affichage dynamiques
+interface DisplayCategory {
+  id: string;
+  name: string;
+  count: number;
+  subcategoryId?: string; // ID de la sous-catégorie d'origine (optionnel)
+}
 
 export function PublicShopsList() {
   const navigate = useNavigate();
@@ -39,55 +47,182 @@ export function PublicShopsList() {
     }
   };
 
-  // Récupération des catégories Dolibarr
-  const { data: categoriesDolibarr = [], isLoading: categoriesLoading } = useQuery<{ id: string; label: string }[]>({
-    queryKey: ['dolibarrCategories'],
-    queryFn: shopApi.getCategories
+  const [fcChalonSubcategories, setFcChalonSubcategories] = useState<{id: string, label: string}[]>([]);
+  const [selectedFcChalonSubcategory, setSelectedFcChalonSubcategory] = useState<string | null>(null);
+  const [allFcChalonProducts, setAllFcChalonProducts] = useState<Product[]>([]);
+
+  // Récupérer directement les catégories filles de FC CHALON
+  const { data: fcChalonCategories, isLoading: isLoadingCategory, error: errorCategory } = useQuery({
+    queryKey: ['fc-chalon-categories'],
+    queryFn: async () => {
+      const apiData = await shopApi.getCategoriesFilles('183');
+      if (apiData && apiData.length > 0) {
+        return apiData;
+      } else {
+        // Si aucune donnée, retourne un tableau vide
+        return [];
+      }
+    }
   });
-  const fcChalonCategory = categoriesDolibarr.find(cat => cat.label === 'FC Chalon');
-  const categoryId = fcChalonCategory?.id;
 
-  // Récupération des produits pour la catégorie 'FC Chalon'
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
-    queryKey: ['productsByCategory', categoryId],
-    queryFn: () => shopApi.getProductsByCategory(categoryId!),
-    enabled: !!categoryId
+  // Mettre à jour les sous-catégories quand les données sont chargées
+  useEffect(() => {
+    if (fcChalonCategories && fcChalonCategories.length > 0) {
+      // Mapper pour avoir un format cohérent
+      const subCategories = fcChalonCategories.map((cat: any) => ({
+        id: String(cat.id),
+        label: cat.label
+      }));
+      setFcChalonSubcategories(subCategories);
+      
+      console.log('🔍 Sous-catégories FC CHALON chargées:', subCategories);
+    }
+  }, [fcChalonCategories]);
+
+  // Récupérer les produits de toutes les sous-catégories quand celles-ci sont chargées
+  useEffect(() => {
+    const loadAllProducts = async () => {
+      if (fcChalonSubcategories.length === 0) return;
+
+      console.log('🔍 Chargement des produits de toutes les sous-catégories...');
+
+      const allProductsPromises = fcChalonSubcategories.map(async (subcat) => {
+        try {
+          const products = await shopApi.getProducts({ category: subcat.id });
+          return products.map((product: any) => ({
+            ...product,
+            subCategoryIds: product.subCategoryIds ? [...product.subCategoryIds, subcat.id] : [subcat.id]
+          }));
+        } catch (err) {
+          console.warn(`⚠️ Impossible de récupérer les produits pour la sous-catégorie ${subcat.id}`, err);
+          return [];
+        }
+      });
+
+      try {
+        const results = await Promise.all(allProductsPromises);
+        const allProducts = results.flat();
+        console.log(`✅ ${allProducts.length} produits récupérés au total depuis les sous-catégories`);
+        setAllFcChalonProducts(allProducts);
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des produits:', error);
+      }
+    };
+    
+    loadAllProducts();
+  }, [fcChalonSubcategories]);
+
+  // Récupérer les produits de la catégorie sélectionnée ou tous les produits
+  const { data: selectedCategoryProducts = [], isLoading } = useQuery<Product[]>({
+    queryKey: ['products-fc-chalon', selectedFcChalonSubcategory],
+    queryFn: async () => {
+      if (selectedFcChalonSubcategory) {
+        // Si une sous-catégorie spécifique est sélectionnée, récupérer ses produits
+        return shopApi.getProducts({ category: selectedFcChalonSubcategory });
+      } else if (allFcChalonProducts.length > 0) {
+        // Si tous les produits sont déjà chargés, les utiliser
+        return allFcChalonProducts;
+      } else {
+        // Fallback au cas où allFcChalonProducts n'est pas encore chargé
+        const allProductsPromises = fcChalonSubcategories.map(
+          subcat => shopApi.getProducts({ category: subcat.id })
+        );
+        const results = await Promise.all(allProductsPromises);
+        return results.flat();
+      }
+    },
+    enabled: !isLoadingCategory // N'active cette requête que lorsque les catégories sont chargées
   });
 
-  // Charge si catégories ou produits en cours de chargement
-  const isLoadingAll = categoriesLoading || productsLoading;
+  // Utiliser les produits sélectionnés comme source de données
+  const products = selectedCategoryProducts;
 
-  // Catégories pour le filtre
-  const categories = [
-    { id: 'all', name: 'Tous les produits', count: products.length },
-    { id: 'maillots', name: 'Maillots', count: products.filter(p => p.label.toLowerCase().includes('maillot')).length },
-    { id: 'shorts', name: 'Shorts', count: products.filter(p => p.label.toLowerCase().includes('short')).length },
-    { id: 'accessoires', name: 'Accessoires', count: products.filter(p => p.label.toLowerCase().includes('ball') || p.label.toLowerCase().includes('gant')).length },
-    { id: 'training', name: 'Training', count: products.filter(p => p.label.toLowerCase().includes('survet') || p.label.toLowerCase().includes('training')).length },
-    { id: 'chaussettes', name: 'Chaussettes', count: products.filter(p => p.label.toLowerCase().includes('chaussette')).length }
-  ];
+  // Générer dynamiquement les catégories d'affichage à partir des sous-catégories
+  const categories = useMemo<DisplayCategory[]>(() => {
+    // Commencer avec la catégorie "Tous les produits"
+    const dynamicCategories: DisplayCategory[] = [
+      { id: 'all', name: 'Tous les produits', count: products.length }
+    ];
+    
+    // Ajouter une catégorie pour chaque sous-catégorie
+    fcChalonSubcategories.forEach(subcat => {
+      // Compter les produits pour cette sous-catégorie
+      const count = products.filter(product => 
+        product.subCategoryIds?.includes(subcat.id) ||
+        (product.category && product.category.toLowerCase().includes(subcat.label.toLowerCase())) ||
+        (product.label && product.label.toLowerCase().includes(subcat.label.toLowerCase()))
+      ).length;
+      
+      // Convertir l'ID de la sous-catégorie en identifiant valide pour l'interface
+      const id = subcat.label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      
+      // Ajouter à la liste des catégories d'affichage
+      dynamicCategories.push({
+        id,
+        name: subcat.label,
+        count,
+        subcategoryId: subcat.id // Stocker l'ID réel de la sous-catégorie pour le filtrage
+      });
+    });
+    
+    return dynamicCategories;
+  }, [fcChalonSubcategories, products]);
+
+  // Mise à jour de la fonction de filtrage pour utiliser les sous-catégories dynamiques
+  const getFilteredProducts = () => {
+    if (!selectedCategory || selectedCategory === 'all') {
+      return products;
+    }
+    
+    // Trouver la catégorie sélectionnée
+    const selectedCat = categories.find(cat => cat.id === selectedCategory);
+    if (!selectedCat) return products;
+    
+    // Si cette catégorie a un ID de sous-catégorie, filtrer par cet ID
+    if (selectedCat.subcategoryId) {
+      return products.filter(product => 
+        (product.subCategoryIds && product.subCategoryIds.includes(selectedCat.subcategoryId!)) ||
+        (product.category && product.category.toLowerCase().includes(selectedCat.name.toLowerCase())) ||
+        (product.label && product.label.toLowerCase().includes(selectedCat.name.toLowerCase()))
+      );
+    }
+    
+    // Fallback vers la méthode précédente avec des regex
+    const categoryMap: Record<string, RegExp> = {
+      'maillots': /maillot/i,
+      'shorts': /short/i,
+      'chaussettes': /chaussette/i,
+      'training': /training|survet/i,
+      'accessoires': /accessoire|ball|gant/i
+    };
+    
+    const regex = categoryMap[selectedCategory];
+    if (!regex) return products;
+    
+    return products.filter(p => {
+      // Vérifier le nom du produit
+      if (regex.test(p.label)) return true;
+      
+      // Vérifier la description du produit
+      if (p.description && regex.test(p.description)) return true;
+      
+      // Vérifier la catégorie du produit
+      if (p.category && regex.test(p.category)) return true;
+      
+      // Vérifier les sous-catégories
+      const matchingSubcat = fcChalonSubcategories.find(
+        subcat => regex.test(subcat.label) && p.subCategoryIds?.includes(subcat.id)
+      );
+      return !!matchingSubcat;
+    });
+  };
+
+  const filteredProducts = getFilteredProducts();
 
   // Demo sizes
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  // Filtrer les produits par catégorie et taille
-  const getFilteredProducts = () => {
-    if (!selectedCategory || selectedCategory === 'all') return products;
-    const categoryMap: Record<string, RegExp> = {
-      maillots: /maillot/i,
-      shorts: /short/i,
-      chaussettes: /chaussette/i,
-      training: /training|survet/i,
-      accessoires: /ball|gant|sac|bonnet|écharpe|casquette/i
-    };
-    const regex = categoryMap[selectedCategory];
-    return regex ? products.filter(p => regex.test(p.label) || (p.description && regex.test(p.description))) : products;
-  };
-
-  const filteredProducts = getFilteredProducts();
-  const isLoading = isLoadingAll;
-
-  if (isLoading) {
+  if (isLoading || isLoadingCategory) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
@@ -96,6 +231,13 @@ export function PublicShopsList() {
         </div>
       </div>
     );
+  }
+
+  if (errorCategory) {
+    return <div>Erreur lors du chargement des sous-catégories.</div>;
+  }
+  if (!isLoadingCategory && fcChalonCategories && fcChalonCategories.length === 0) {
+    return <div>Aucune sous-catégorie trouvée.</div>;
   }
 
   return (
@@ -116,7 +258,7 @@ export function PublicShopsList() {
         
         <div className="relative text-center text-white px-4 max-w-4xl mx-auto">
           <div className="mb-4 text-nolt-yellow font-montserrat font-bold tracking-wider">INDESTRUCTIBLES DEPUIS 1926</div>
-          <h1 className="font-thunder text-7xl mb-6 tracking-tight italic uppercase">La Boutique du FC CHALON</h1>
+          <h1 className="font-thunder text-7xl mb-6 tracking-tight italic uppercase">Boutique FC CHALON</h1>
           <p className="max-w-2xl mx-auto text-xl font-montserrat">Découvrez notre collection exclusive et équipez-vous avec le meilleur du sportswear officiel FC Chalon</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <button 
@@ -170,7 +312,7 @@ export function PublicShopsList() {
         <div className="flex items-center text-sm mb-10">
           <Link to="/home" className="text-gray-500 hover:text-nolt-orange transition-colors font-montserrat">Accueil</Link>
           <ChevronRight className="h-4 w-4 mx-2 text-gray-400" />
-          <span className="font-semibold font-montserrat">Boutique</span>
+          <span className="font-semibold font-montserrat">Boutique FC CHALON</span>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8" id="product-grid">
@@ -311,10 +453,10 @@ export function PublicShopsList() {
                       className={`${viewMode === 'grid' ? 'w-full relative cursor-pointer' : 'w-1/3 relative cursor-pointer'}`}
                       onClick={() => setSelectedProduct(product)}
                     >
-                      {product.image_url ? (
+                      {product.imageUrl ? (
                         <img
-                          src={product.image_url}
-                          alt={product.label}
+                          src={product.imageUrl}
+                          alt={product.webLabel || product.label}
                           className={`w-full ${viewMode === 'grid' ? 'aspect-square' : 'h-full'} object-cover`}
                         />
                       ) : (

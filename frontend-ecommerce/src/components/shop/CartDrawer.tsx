@@ -60,13 +60,15 @@ export function CartDrawer({ isOpen, onClose, onCheckout }: CartDrawerProps) {
                     key={product.id}
                     className="flex gap-4 rounded-xl border p-4 bg-white"
                   >
-                    {product.image_url && (
-                      <img
-                        src={product.image_url}
-                        alt={product.label}
-                        className="h-24 w-24 rounded-lg object-cover"
-                      />
-                    )}
+                    <div className="flex-shrink-0">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.label}
+                          className="h-16 w-16 rounded-md object-cover"
+                        />
+                      ) : null}
+                    </div>
                     <div className="flex flex-1 flex-col">
                       <h3 className="font-thunder text-xl uppercase text-nolt-orange">{product.label}</h3>
                       <p className="text-sm text-gray-500 font-montserrat">{product.ref}</p>

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Store, ShoppingBag, ArrowLeft, Package, Heart, Share2, ChevronRight, Filter, ChevronDown, Star, Plus, Minus, ArrowRight } from 'lucide-react';
 import { shopApi } from '../../services/api';
 import { useCart } from '../../contexts/CartContext';
-import { CartDrawer } from '../../components/shop/CartDrawer';
+import { CartDrawer } from '../../components/CartDrawer';
 import { Configurator3D } from '../../components/Configurator3D';
 import { ProductDetailPopup } from '../../components/shop/ProductDetailPopup';
 import type { Shop, Product } from '../../types/shop';
@@ -19,9 +19,12 @@ export function PublicShopView() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
+  // Log pour voir l'état initial et les mises à jour de selectedProduct
+  console.log('[PublicShopView] selectedProduct state:', selectedProduct);
+
   const { data: shop, isLoading, error } = useQuery<Shop>({
     queryKey: ['public-shop', id],
-    queryFn: () => shopApi.getShop(Number(id)),
+    queryFn: () => shopApi.getShop(id || ''),
     enabled: !!id
   });
 
@@ -264,11 +267,14 @@ export function PublicShopView() {
               {/* Product image */}
               <div 
                 className={`${viewMode === 'grid' ? 'w-full relative cursor-pointer' : 'w-1/3 relative cursor-pointer'}`}
-                onClick={() => setSelectedProduct(product)}
+                onClick={() => {
+                  console.log('[PublicShopView] Clicked on product image, setting selectedProduct to:', product);
+                  setSelectedProduct(product);
+                }}
               >
-                {product.image_url ? (
+                {product.images && product.images.length > 0 ? (
                   <img
-                    src={product.image_url}
+                    src={product.images[0]}
                     alt={product.label}
                     className={`w-full ${viewMode === 'grid' ? 'aspect-square' : 'h-full'} object-cover`}
                   />
@@ -300,7 +306,10 @@ export function PublicShopView() {
                 <div>
                   <h3 
                     className="font-thunder text-xl uppercase text-nolt-black group-hover:text-nolt-orange transition-colors leading-tight cursor-pointer"
-                    onClick={() => setSelectedProduct(product)}
+                    onClick={() => {
+                      console.log('[PublicShopView] Clicked on product title, setting selectedProduct to:', product);
+                      setSelectedProduct(product);
+                    }}
                   >
                     {product.label}
                   </h3>
@@ -383,6 +392,7 @@ export function PublicShopView() {
                     <div className="flex gap-2 mt-4">
                       <button 
                         onClick={() => {
+                          console.log('[PublicShopView] Clicked on "Ajouter" button (grid view), NO popup expected here.');
                           addToCart(product, getQuantity(product.id));
                           setIsCartOpen(true);
                         }}
@@ -393,7 +403,10 @@ export function PublicShopView() {
                         Ajouter
                       </button>
                       <button 
-                        onClick={() => setSelectedProduct(product)}
+                        onClick={() => {
+                          console.log('[PublicShopView] Clicked on magnifying glass icon (grid view), setting selectedProduct to:', product);
+                          setSelectedProduct(product);
+                        }}
                         className="px-3 py-3 border border-gray-300 rounded-lg hover:border-nolt-yellow hover:text-nolt-yellow transition-colors"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -408,6 +421,7 @@ export function PublicShopView() {
                     <div className="flex gap-4 mt-4">
                       <button 
                         onClick={() => {
+                          console.log('[PublicShopView] Clicked on "Ajouter au panier" button (list view), NO popup expected here.');
                           addToCart(product, getQuantity(product.id));
                           setIsCartOpen(true);
                         }}
@@ -418,7 +432,10 @@ export function PublicShopView() {
                         Ajouter au panier
                       </button>
                       <button 
-                        onClick={() => setSelectedProduct(product)}
+                        onClick={() => {
+                          console.log('[PublicShopView] Clicked on "Voir détails" button (list view), setting selectedProduct to:', product);
+                          setSelectedProduct(product);
+                        }}
                         className="px-4 py-3 border border-gray-300 rounded-lg hover:border-nolt-yellow hover:text-nolt-yellow transition-colors font-montserrat"
                       >
                         Voir détails
@@ -457,12 +474,15 @@ export function PublicShopView() {
               <div 
                 key={product.id} 
                 className="group border border-gray-200 hover:border-nolt-yellow transition-all duration-300 rounded-lg overflow-hidden bg-white cursor-pointer"
-                onClick={() => setSelectedProduct(product)}
+                onClick={() => {
+                  console.log('[PublicShopView] Clicked on product in "Vous pourriez aussi aimer", setting selectedProduct to:', product);
+                  setSelectedProduct(product);
+                }}
               >
                 <div className="relative">
-                  {product.image_url ? (
+                  {product.images && product.images.length > 0 ? (
                     <img
-                      src={product.image_url}
+                      src={product.images[0]}
                       alt={product.label}
                       className="w-full aspect-square object-cover"
                     />
@@ -552,11 +572,21 @@ export function PublicShopView() {
       />
 
       {/* Product Detail Popup */}
+      {/* Log pour vérifier la condition d'affichage du popup */}
+      {(() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[PublicShopView] Rendering ProductDetailPopup? selectedProduct is:', selectedProduct, 'Condition is:', !!selectedProduct);
+        }
+        return null; // Toujours retourner un ReactNode valide (null ne rend rien)
+      })()}
       {selectedProduct && (
         <ProductDetailPopup
           product={selectedProduct}
           isOpen={!!selectedProduct}
-          onClose={() => setSelectedProduct(null)}
+          onClose={() => {
+            console.log('[PublicShopView] Closing ProductDetailPopup, setting selectedProduct to null.');
+            setSelectedProduct(null);
+          }}
         />
       )}
     </div>

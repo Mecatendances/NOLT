@@ -4,6 +4,7 @@ export interface Product {
   label: string;
   webLabel?: string;
   imageUrl?: string;
+  images?: string[];
   price: number;
   stock: number;
   category?: string;
@@ -27,4 +28,12 @@ export interface CategoryTree {
   id: string;
   label: string;
   children?: CategoryTree[];
+}
+
+export interface ProductImage {
+  id: number;
+  url: string;
+  alt: string;
+  order: number;
+  productId: number;
 }

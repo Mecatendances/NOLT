@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import axios from 'axios';
 import { JwtService } from '@nestjs/jwt';
+import { UsersService } from '../users/users.service';
 
 interface JwtAuthResponse {
   code: string;
@@ -11,15 +12,39 @@ interface JwtAuthResponse {
 export class AuthService {
   private WP_VALIDATE_URL = process.env.WP_JWT_AUTH_URL || 'https://wpdev.wearenolt.com/wp-json/jwt-auth/v1/token/validate';
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  async validateUser(token: string) {
+  async validateUser(email: string, password: string) {
+    const user = await this.usersService.validateCredentials(email, password);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return user;
+  }
+
+  async login(user: any) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      licenseeShops: user.licenseeShops?.map(s => s.id),
+    };
+    return {
+      accessToken: this.jwtService.sign(payload),
+    };
+  }
+
+  async validateToken(token: string) {
     console.log('🛠 Vérification du token reçu par NestJS:', token);
 
     // 1) Vérification locale
     try {
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET || 'superSecret',
+        secret: process.env.JWT_SECRET || 'your-secret-key',
       });
       return payload;
     } catch (e) {

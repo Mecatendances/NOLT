@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { OrderEntity } from '../orders/order.entity';
+import { Shop } from '../shops/entities/shop.entity';
 
 export type CampaignStatus = 'DRAFT' | 'PAID' | 'SENT';
 
@@ -20,6 +21,13 @@ export class CampaignEntity {
   // Valeur calculée mais on la stocke pour des raisons de reporting
   @Column({ type: 'numeric', default: 0 })
   totalTtc: number;
+
+  @Column({ type: 'uuid', name: 'shop_id' })
+  shopId: string;
+
+  @ManyToOne(() => Shop, shop => shop.campaigns)
+  @JoinColumn({ name: 'shop_id' })
+  shop: Shop;
 
   @CreateDateColumn()
   createdAt: Date;

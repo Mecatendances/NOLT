@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserEntity } from './user.entity';
+import { UserEntity } from './entities/user.entity';
 import { UserRole } from './user-role.enum';
 import * as bcrypt from 'bcryptjs';
 
@@ -24,34 +24,33 @@ export class UsersService implements OnApplicationBootstrap {
       return;
     }
 
-    const passwordHash = await bcrypt.hash(superAdminPassword, 12);
+    const hashedPassword = await bcrypt.hash(superAdminPassword, 12);
 
     const superAdmin = this.userRepository.create({
-      name: 'Super Admin',
       email: superAdminEmail,
-      passwordHash,
+      password: hashedPassword,
       role: UserRole.SUPERADMIN,
     });
     await this.userRepository.save(superAdmin);
     this.logger.log(`Compte superadmin créé (${superAdminEmail})`);
   }
 
-  async validateCredentials(email: string, password: string) {
+  async validateCredentials(email: string, plainPassword: string) {
     const user = await this.userRepository.createQueryBuilder('user')
-      .addSelect('user.passwordHash')
+      .addSelect('user.password')
       .where('user.email = :email', { email })
       .getOne();
 
-    if (!user) {
+    if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
+    const isValid = await bcrypt.compare(plainPassword, user.password);
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    delete (user as any).passwordHash;
+    delete (user as any).password;
     return user;
   }
 
@@ -60,6 +59,14 @@ export class UsersService implements OnApplicationBootstrap {
   }
 
   async updateUser(id: string, patch: Partial<UserEntity>) {
-    await this.userRepository.update({ id }, patch);
+    const { email, role, shopId } = patch;
+    const validPatch: Partial<UserEntity> = {};
+    if (email !== undefined) validPatch.email = email;
+    if (role !== undefined) validPatch.role = role;
+    if (shopId !== undefined) validPatch.shopId = shopId;
+
+    if (Object.keys(validPatch).length > 0) {
+        await this.userRepository.update({ id }, validPatch);
+    }
   }
 } 

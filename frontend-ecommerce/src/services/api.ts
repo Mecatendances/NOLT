@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Product, Shop, CategoryTree } from '../types/shop';
+import { Product, Shop, CategoryTree, ProductImage } from '../types/shop';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api',
@@ -49,35 +49,42 @@ export const shopApi = {
   // Produits
   getProducts: async (options?: { category?: string; shopId?: string }): Promise<Product[]> => {
     try {
-      let url = '/dolibarr/products';
-      const params: any = {};
+      let url = '/catalog/products';
       if (options?.category) {
-        params.category = options.category;
+        url = `/catalog/categories/${options.category}/products`;
       }
-      if (options?.shopId) {
-        params.shopId = options.shopId;
-      }
-      const response = await api.get(url, { params });
-      console.log('Réponse API produits:', response.data);
+      console.log('Requête API produits:', { url });
+      const response = await api.get(url);
       const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api');
       const staticBase = apiBase.replace(/\/api$/, '');
       return (response.data as any[]).map(prod => {
-        console.log('Produit brut:', prod);
-        const mapped = {
+        const images = Array.isArray(prod.images)
+          ? prod.images
+              .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+              .map((img: any) => {
+                if (!img.url) return null;
+                return img.url.startsWith('http') ? img.url : `${staticBase}${img.url}`;
+              })
+              .filter(Boolean) as string[]
+          : [];
+        // Fallback si aucune image dans le tableau mais une imageUrl simple est disponible
+        if (images.length === 0 && (prod.imageUrl || prod.image_url)) {
+          const imageUrl = prod.imageUrl || prod.image_url;
+          images.push(imageUrl.startsWith('http') ? imageUrl : `${staticBase}${imageUrl}`);
+        }
+        return {
           id: Number(prod.id),
           ref: prod.ref,
           label: prod.label,
           webLabel: prod.webLabel,
-          imageUrl: prod.imageUrl ? `${staticBase}${prod.imageUrl}` : undefined,
+          images,
           price: parseFloat(prod.priceTtc ?? prod.price_ttc ?? prod.price ?? '0'),
           stock: prod.stock ?? 0,
           category: prod.category?.id ?? prod.category ?? '',
           description: prod.description,
         };
-        console.log('Produit mappé:', mapped);
-        return mapped;
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la récupération des produits', error);
       return [];
     }
@@ -105,56 +112,24 @@ export const shopApi = {
     }
   },
 
-  // Récupérer les catégories filles d'une catégorie spécifique via l'API noltapi
+  // Récupérer les catégories filles d'une catégorie spécifique via l'API locale
   getCategoriesFilles: async (categoryId: string): Promise<any[]> => {
     try {
       console.log(`🔍 Récupération des catégories filles pour la catégorie ${categoryId}`);
-      
-      // Liste des endpoints à essayer
-      const endpoints = [
-        `/dolibarr/noltapi/categoriesFilles/${categoryId}`,
-        `/dolibarr/categories/${categoryId}/children`,
-        `/dolibarr/categories?parent=${categoryId}`
-      ];
-      
-      // Essayer chaque endpoint jusqu'à ce qu'un fonctionne
-      for (const endpoint of endpoints) {
-        try {
-          console.log(`📡 Tentative avec l'endpoint: ${endpoint}`);
-          const response = await api.get(endpoint);
-          
-          if (Array.isArray(response.data) && response.data.length > 0) {
-            console.log(`✅ Endpoint ${endpoint} a fonctionné, ${response.data.length} catégories récupérées`);
-            return response.data;
-          } else if (response.data && typeof response.data === 'object') {
-            // Vérifier si nous avons un tableau dans une propriété
-            const possibleArrayKeys = ['children', 'categories', 'data', 'results'];
-            for (const key of possibleArrayKeys) {
-              if (Array.isArray(response.data[key]) && response.data[key].length > 0) {
-                console.log(`✅ Données extraites de response.data.${key}, ${response.data[key].length} catégories`);
-                return response.data[key];
-              }
-            }
-            // NOUVEAU : transformer l'objet en tableau si besoin
-            const values = Object.values(response.data);
-            if (values.length > 0 && typeof values[0] === 'object') {
-              console.log('✅ Données extraites des valeurs de l\'objet réponse', values);
-              return values;
-            }
-          }
-          
-          console.log(`⚠️ L'endpoint ${endpoint} a répondu mais sans données utilisables`);
-        } catch (endpointError: any) {
-          console.log(`⚠️ Échec de l'endpoint ${endpoint}: ${endpointError.message}`);
-          // Continuer avec le prochain endpoint
-        }
+      const response = await api.get(`/catalog/categoriesFilles/${categoryId}`);
+      if (Array.isArray(response.data)) {
+        return response.data;
       }
-      
-      // Si aucun endpoint n'a fonctionné, lever une erreur
-      throw new Error("Impossible de récupérer les catégories filles depuis l'API.");
+      // Si la réponse n'est pas un tableau, on tente de l'extraire
+      const values = Object.values(response.data);
+      if (values.length > 0 && typeof values[0] === 'object') {
+        return values;
+      }
+      return [];
     } catch (error) {
-      console.warn('⚠️ Erreur API, aucune donnée retournée');
-      throw error;
+      console.warn('⚠️ Erreur API locale, aucune donnée retournée');
+      console.error('Détails de l\'erreur:', error);
+      return [];
     }
   },
 
@@ -182,7 +157,45 @@ export const shopApi = {
   getShop: async (id: string): Promise<Shop> => {
     try {
       const response = await api.get(`/shops/${id}`);
-      return response.data;
+      const shopData = response.data as any;
+
+      if (shopData.products && Array.isArray(shopData.products)) {
+        const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api');
+        const staticBase = apiBase.replace(/\/api$/, '');
+        
+        console.log('[getShop] Produits avant transformation:', shopData.products);
+        
+        shopData.products = shopData.products.map((prod: any) => {
+          const images = Array.isArray(prod.images)
+            ? prod.images
+                .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+                .map((img: any) => {
+                  if (!img.url) return null;
+                  return img.url.startsWith('http') ? img.url : `${staticBase}${img.url}`;
+                })
+                .filter(Boolean) as string[]
+            : [];
+          console.log(`[getShop] Produit ${prod.id} - Images transformées:`, images);
+          
+          const mappedProduct: Product = {
+            id: Number(prod.id),
+            ref: prod.ref,
+            label: prod.label,
+            price: parseFloat(prod.priceTtc ?? prod.price_ttc ?? prod.price ?? '0'),
+            stock: Number(prod.stock ?? 0),
+            webLabel: prod.webLabel || prod.label,
+            images,
+            category: prod.category?.id ?? prod.category ?? '',
+            description: prod.description,
+            subCategoryIds: prod.subCategoryIds,
+            ...(prod as object),
+          };
+          console.log(`[getShop] Produit ${prod.id} - Données finales:`, mappedProduct);
+          return mappedProduct;
+        });
+      }
+
+      return shopData as Shop;
     } catch (error) {
       console.error(`Erreur lors de la récupération de la boutique ${id}`, error);
       throw error;
@@ -208,27 +221,67 @@ export const shopApi = {
     }
   },
 
-  updateProduct: async (shopId: string, productId: number, productData: Partial<Product>): Promise<Product> => {
+  updateProduct: async (shopId: string, productId: number, productData: Partial<Product>): Promise<any> => {
     try {
-      const response = await api.put(`/shops/${shopId}/products/${productId}`, productData);
+      const payload = { customWebLabel: productData.webLabel };
+      const response = await api.put(`/catalog/shops/${shopId}/products/${productId}/web-label`, payload);
       return response.data;
     } catch (error) {
-      console.error(`Erreur lors de la mise à jour du produit ${productId}`, error);
+      console.error(`Erreur lors de la mise à jour du webLabel custom pour le produit ${productId} dans la boutique ${shopId}`, error);
       throw error;
     }
   },
 
-  uploadProductImage: async (productId: number, formData: FormData): Promise<Product> => {
+  uploadProductImage: async (productId: number, formData: FormData): Promise<ProductImage> => {
     try {
-      const response = await api.post(`/dolibarr/products/${productId}/image`, formData, {
+      const response = await api.post(`/products/${productId}/images`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response.data;
+      // Préfixe l'URL retournée pour qu'elle pointe vers le backend
+      const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api');
+      const staticBase = apiBase.replace(/\/api$/, '');
+      return {
+        ...response.data,
+        url: `${staticBase}${response.data.url}`,
+      } as ProductImage;
     } catch (error) {
       console.error(`Erreur lors du téléchargement de l'image pour le produit ${productId}`, error);
       throw error;
+    }
+  },
+
+  deleteProductImage: async (imageId: number): Promise<void> => {
+    try {
+      await api.delete(`/products/images/${imageId}`);
+    } catch (error) {
+      console.error(`Erreur lors de la suppression de l'image ${imageId}`, error);
+      throw error;
+    }
+  },
+
+  reorderProductImages: async (productId: number, imageIds: number[]): Promise<void> => {
+    try {
+      await api.post(`/products/${productId}/images/reorder`, { imageIds });
+    } catch (error) {
+      console.error(`Erreur lors du réordre des images du produit ${productId}`, error);
+      throw error;
+    }
+  },
+
+  getProductImages: async (productId: number): Promise<ProductImage[]> => {
+    try {
+      const response = await api.get(`/products/${productId}/images`);
+      const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api');
+      const staticBase = apiBase.replace(/\/api$/, '');
+      return (response.data as ProductImage[]).map(img => ({
+        ...img,
+        url: `${staticBase}${img.url}`,
+      }));
+    } catch (error) {
+      console.error(`Erreur lors de la récupération des images du produit ${productId}`, error);
+      return [];
     }
   },
 
@@ -237,6 +290,19 @@ export const shopApi = {
       await api.patch(`/dolibarr/products/${productId}/web-label`, { webLabel });
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du nom d'affichage web du produit ${productId}`, error);
+      throw error;
+    }
+  },
+
+  getShopByDolibarrCategoryId: async (dolibarrCategoryId: string): Promise<Shop | null> => {
+    try {
+      const response = await api.get<Shop>(`/catalog/shops/by-dolibarr-category/${dolibarrCategoryId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        return null;
+      }
+      console.error(`Erreur lors de la récupération de la boutique par Dolibarr Category ID ${dolibarrCategoryId}`, error);
       throw error;
     }
   },

@@ -2,10 +2,10 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Store, Plus, ShoppingBag, Package } from 'lucide-react';
-import { shopApi } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import type { Shop } from '../types/shop';
-import { UserRole } from '../types/userRole';
+import { shopApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import type { Shop } from '../../types/shop';
+import { UserRole } from '../../types/userRole';
 
 export function ShopsList() {
   const { user, hasRole } = useAuth();

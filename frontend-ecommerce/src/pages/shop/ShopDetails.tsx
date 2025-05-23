@@ -2,9 +2,9 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Store, ArrowLeft, Package, Euro } from 'lucide-react';
-import { shopApi } from '../services/api';
-import { ProductList } from '../components/ProductList';
-import type { Shop } from '../types/shop';
+import { shopApi } from '../../services/api';
+import { ProductList } from '../../components/ProductList';
+import type { Shop } from '../../types/shop';
 
 export function ShopDetails() {
   const { id } = useParams<{ id: string }>();

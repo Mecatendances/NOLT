@@ -12,12 +12,12 @@ import { AdminLayout } from './layouts/AdminLayout';
 // Pages
 import { HomePage } from './pages/HomePage';
 import { Login } from './pages/auth/Login';
-import { PublicShopsList } from './pages/PublicShopsList';
+import { PublicShopsList } from './pages/shop/PublicShopsList';
 import { PublicShopView } from './pages/shop/PublicShopView';
 import { Checkout } from './pages/shop/Checkout';
-import { ShopsList } from './pages/ShopsList';
-import { CreateShop } from './pages/CreateShop';
-import { ShopDetails } from './pages/ShopDetails';
+import { ShopsList } from './pages/shop/ShopsList';
+import { CreateShop } from './pages/shop/CreateShop';
+import { ShopDetails } from './pages/shop/ShopDetails';
 import { Dashboard } from './pages/admin/Dashboard';
 import { Pages } from './pages/admin/Pages';
 import { PageEditor } from './pages/admin/PageEditor';
@@ -34,8 +34,8 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
+    <Router>
+      <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <CartProvider>
             <TopBar />
@@ -77,8 +77,8 @@ function App() {
             </Routes>
           </CartProvider>
         </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </Router>
   );
 }
 

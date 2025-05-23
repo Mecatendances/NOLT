@@ -89,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       localStorage.setItem('user', JSON.stringify(user));
       setState({ user, isAuthenticated: true, isLoading: false });
+      navigate('/');
     } catch (error: any) {
       console.error('Erreur de connexion', error);
       setState({ user: null, isAuthenticated: false, isLoading: false });
@@ -100,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setState({ user: null, isAuthenticated: false, isLoading: false });
-    navigate('/');
+    navigate('/login');
   };
 
   const hasRole = (...allowed: UserRole[]): boolean => {

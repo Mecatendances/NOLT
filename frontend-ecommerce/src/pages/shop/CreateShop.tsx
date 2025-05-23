@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { ShopForm } from '../components/ShopForm';
-import { ProductList } from '../components/ProductList';
+import { ShopForm } from '../../components/ShopForm';
+import { ProductList } from '../../components/ProductList';
 import { Store } from 'lucide-react';
-import { shopApi } from '../services/api';
-import type { Product } from '../types/shop';
+import { shopApi } from '../../services/api';
+import type { Product } from '../../types/shop';
 
 export function CreateShop() {
   const navigate = useNavigate();

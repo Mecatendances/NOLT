@@ -83,7 +83,7 @@ export function ShopProducts() {
   const queryClient = useQueryClient();
   const updateWebLabelMutation = useMutation({
     mutationFn: async ({ productId, value }: { productId: number, value: string }) => {
-      await shopApi.updateWebLabel(String(productId), value);
+      await shopApi.updateProduct(shopId!, productId, { webLabel: value });
     },
     onSuccess: () => {
       if (shopId) queryClient.invalidateQueries({ queryKey: ['shop', shopId] });
@@ -95,9 +95,9 @@ export function ShopProducts() {
     if (shop?.products) {
       const labels: Record<string, string> = {};
       shop.products.forEach(product => {
-        if (product.webLabel) {
-          labels[product.id] = product.webLabel;
-        }
+        // product.webLabel ici est celui envoyé par le backend.
+        // Il contient déjà le customWebLabel ou le fallback au label principal Dolibarr.
+        labels[product.id] = product.webLabel || product.label; // Assurer un fallback si product.webLabel est vide/null
       });
       setWebLabels(labels);
     }
@@ -156,7 +156,11 @@ export function ShopProducts() {
     try {
       const formData = new FormData();
       formData.append('image', file);
-      await shopApi.uploadProductImage(shopId!, productId, formData);
+      await shopApi.uploadProductImage(productId, formData);
+      // Rafraîchir les données du produit après l'upload
+      if (shopId) {
+        queryClient.invalidateQueries({ queryKey: ['shop', shopId] });
+      }
     } catch (error) {
       console.error('Erreur lors du téléchargement de l\'image', error);
     }
@@ -274,9 +278,9 @@ export function ShopProducts() {
                     ) : (
                       <>
                         <div className="flex items-center gap-4">
-                          {product.image_url ? (
+                          {product.images && product.images.length > 0 ? (
                             <img
-                              src={product.image_url}
+                              src={product.images[0]}
                               alt={product.label}
                               className="h-16 w-16 rounded-lg object-cover"
                             />
@@ -286,13 +290,45 @@ export function ShopProducts() {
                             </div>
                           )}
                           <div>
-                            <h3 className="font-thunder text-lg text-nolt-black">{webLabels[product.id] || product.label}</h3>
-                            <p className="text-xs text-gray-400 italic">(Dolibarr: {product.label})</p>
+                            {(() => {
+                              const displayLabel = product.webLabel; 
+                              const originalDolibarrLabel = product.label;
+                              const showOriginalLabelInParentheses = displayLabel && originalDolibarrLabel && displayLabel !== originalDolibarrLabel;
+
+                              return (
+                                <>
+                                  <h3 className="font-thunder text-lg text-nolt-black">
+                                    <span className={showOriginalLabelInParentheses ? "text-nolt-orange" : ""}>
+                                      {displayLabel || originalDolibarrLabel} {/* Fallback au cas où displayLabel serait vide */}
+                                    </span>
+                                  </h3>
+                                  {showOriginalLabelInParentheses && (
+                                    <p className="text-xs text-gray-400 italic">
+                                      (Dolibarr: {originalDolibarrLabel})
+                                    </p>
+                                  )}
+                                </> 
+                              );
+                            })()}
                             <p className="text-sm text-gray-500">Réf: {product.ref}</p>
                             <p className="text-sm text-gray-500">Stock: {product.stock}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          <label className="rounded-lg bg-gray-100 p-2 hover:bg-gray-200 cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleImageUpload(product.id, file);
+                                }
+                              }}
+                            />
+                            <Image className="h-5 w-5" />
+                          </label>
                           <button
                             onClick={() => setEditingProduct(String(product.id))}
                             className="rounded-lg bg-gray-100 p-2 hover:bg-gray-200"

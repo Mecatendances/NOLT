@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ShoppingBag, Heart, ChevronLeft, ChevronRight, Plus, Minus, Star } from 'lucide-react';
+import { X, ShoppingBag, Heart, ChevronLeft, ChevronRight, Plus, Minus, Star, Image as ImageIcon } from 'lucide-react';
 import { Product } from '../../types/shop';
 import { useCart } from '../../contexts/CartContext';
 
@@ -15,16 +15,19 @@ export function ProductDetailPopup({ product, isOpen, onClose }: ProductDetailPo
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [currentImage, setCurrentImage] = useState(0);
 
+  // Log pour vérifier product.imageUrl dès réception DANS CE COMPOSANT
+  console.log('[ProductDetailPopup] PROPS product received:', JSON.parse(JSON.stringify(product)));
+  console.log('[ProductDetailPopup] PROPS product.imageUrl:', product.imageUrl);
+  console.log('[ProductDetailPopup] PROPS product.webLabel:', product.webLabel);
+
   // Demo sizes
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  // Pour la démo, créer un tableau d'images (dans une vraie application, ces données viendraient du backend)
-  const images = [
-    product.image_url,
-    // Ajouter des images supplémentaires - dans une vraie application, ces images viendraient de votre backend
-    product.image_url?.replace('.jpg', '-2.jpg') || '',
-    product.image_url?.replace('.jpg', '-3.jpg') || ''
-  ].filter(Boolean);
+  // Carrousel d'images
+  const images = product.images && product.images.length > 0 ? product.images : [];
+
+  // Log pour vérifier le tableau d'images construit
+  console.log('[ProductDetailPopup] Constructed images array:', images);
 
   if (!isOpen) return null;
 
@@ -43,14 +46,6 @@ export function ProductDetailPopup({ product, isOpen, onClose }: ProductDetailPo
   const handleAddToCart = () => {
     addToCart(product, quantity, selectedSize || undefined);
     onClose();
-  };
-
-  const nextImage = () => {
-    setCurrentImage((prev) => (prev + 1) % images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
   };
 
   // Empêcher le défilement du body quand la popup est ouverte
@@ -82,53 +77,59 @@ export function ProductDetailPopup({ product, isOpen, onClose }: ProductDetailPo
           <div className="flex flex-col md:flex-row">
             {/* Section d'image */}
             <div className="md:w-1/2 bg-gray-100 relative h-96 md:h-auto">
-              {/* Image principale */}
-              <div className="relative h-full">
-                <img 
-                  src={images[currentImage]} 
-                  alt={product.label} 
-                  className="h-full w-full object-cover"
-                />
-                
-                {/* Flèches de navigation */}
-                {images.length > 1 && (
+              {/* Carrousel d'images */}
+              <div className="flex flex-col items-center mb-6 w-full">
+                {images.length > 0 ? (
                   <>
-                    <button 
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-gray-600 hover:bg-white hover:text-nolt-orange transition-colors"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </button>
-                    <button 
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-gray-600 hover:bg-white hover:text-nolt-orange transition-colors"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </button>
+                    <div className="relative w-full aspect-square flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+                      <button
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-1 hover:bg-white z-10"
+                        onClick={() => setCurrentImage((prev) => (prev - 1 + images.length) % images.length)}
+                        disabled={images.length <= 1}
+                      >
+                        <ChevronLeft className="h-6 w-6" />
+                      </button>
+                      <img
+                        src={images[currentImage]}
+                        alt={product.webLabel || product.label}
+                        className="w-full h-full object-contain"
+                      />
+                      <button
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-1 hover:bg-white z-10"
+                        onClick={() => setCurrentImage((prev) => (prev + 1) % images.length)}
+                        disabled={images.length <= 1}
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </button>
+                    </div>
+                    {/* Miniatures */}
+                    {images.length > 1 && (
+                      <div className="flex gap-2 mt-3 justify-center">
+                        {images.map((img, idx) => (
+                          <button
+                            key={img + idx}
+                            className={`border-2 rounded-lg overflow-hidden w-16 h-16 ${currentImage === idx ? 'border-nolt-orange' : 'border-transparent'}`}
+                            onClick={() => setCurrentImage(idx)}
+                            tabIndex={-1}
+                          >
+                            <img src={img} alt={product.webLabel || product.label} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </>
+                ) : (
+                  <div className="aspect-square w-full flex items-center justify-center bg-gray-100 rounded-lg">
+                    <ImageIcon className="h-12 w-12 text-gray-400" />
+                  </div>
                 )}
               </div>
-
-              {/* Navigation par vignettes */}
-              {images.length > 1 && (
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                  {images.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImage(index)}
-                      className={`h-3 w-3 rounded-full ${
-                        currentImage === index ? 'bg-nolt-yellow' : 'bg-white/60 hover:bg-white'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Section des détails du produit */}
             <div className="md:w-1/2 p-6 md:p-8 flex flex-col">
               <div className="flex-1">
-                <h2 className="font-thunder text-3xl text-nolt-black italic uppercase mb-2">{product.label}</h2>
+                <h2 className="font-thunder text-3xl text-nolt-black italic uppercase mb-2">{product.webLabel || product.label}</h2>
                 <p className="text-sm text-gray-500 font-montserrat">{product.ref}</p>
                 
                 {/* Évaluation */}

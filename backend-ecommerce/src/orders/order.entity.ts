@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { OrderItemEntity } from './order-item.entity';
-import { UserEntity } from '../users/user.entity';
+import { UserEntity } from '../users/entities/user.entity';
 import { CampaignEntity } from '../campaigns/campaign.entity';
+import { Shop } from '../shops/entities/shop.entity';
 
 @Entity('orders')
 export class OrderEntity {
@@ -14,6 +15,13 @@ export class OrderEntity {
   @ManyToOne(() => CampaignEntity, (campaign) => campaign.orders, { nullable: true, onDelete: 'SET NULL' })
   campaign?: CampaignEntity;
 
+  @Column({ type: 'uuid', name: 'shop_id' })
+  shopId: string;
+
+  @ManyToOne(() => Shop, shop => shop.orders)
+  @JoinColumn({ name: 'shop_id' })
+  shop: Shop;
+
   @Column({ type: 'numeric' })
   totalTtc: number;
 
@@ -23,8 +31,11 @@ export class OrderEntity {
   @Column({ nullable: true })
   dolibarrId?: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @Column({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
 
   @OneToMany(() => OrderItemEntity, (item) => item.order, {
     cascade: true,

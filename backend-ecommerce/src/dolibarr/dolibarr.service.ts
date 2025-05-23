@@ -24,61 +24,37 @@ export class DolibarrService {
     console.log('================================');
   }
 
-  async getProducts(categoryId?: number, page = 0, includeStock = false) {
+  async getProducts(categoryId?: number, page = 0, includeStock = false): Promise<DolibarrProduct[]> {
     try {
-      // L'API semble répondre directement depuis l'URL non-normalisée
-      const externalApiUrl = 'https://dbdev.wearenolt.net/htdocs/api/index.php';
-      const url = `${externalApiUrl}/products`;
+      // Récupérer les produits depuis la base de données avec leurs images
+      const query = this.productRepository.createQueryBuilder('product')
+        .leftJoinAndSelect('product.images', 'images')
+        .orderBy('images.order', 'ASC');
+
+      const products = await query.getMany();
       
-      const params: any = {
-        DOLAPIKEY: this.apiKey,
-        limit: 999999,
-        page: 0,
-        includestockdata: includeStock ? 1 : 0,
-        withcategories: 1
-      };
-
-      if (categoryId) {
-        params.category = categoryId;
-      }
-
-      console.log(`📡 Requête vers Dolibarr: ${url} avec paramètres:`, params);
-
-      const response = await this.httpService.axiosRef.get(url, { params });
-
-      if (!Array.isArray(response.data)) {
-        console.error(`⚠️ Réponse inattendue:`, response.data);
-        throw new Error('Réponse invalide reçue de Dolibarr');
-      }
-
-      // Récupérer les données locales pour tous les produits Dolibarr
-      const dolibarrIds = response.data.map((p: any) => String(p.id));
-      const localProducts = await this.productRepository.findByIds(dolibarrIds);
-      const localMap = new Map(localProducts.map(p => [String(p.id), p]));
-
-      // Traiter les produits avec leurs catégories et fusionner les champs locaux
-      const productsWithCategories = response.data.map(product => {
-        let categoryLabel = '-';
-        if (product.categories && Array.isArray(product.categories)) {
-          categoryLabel = product.categories.map(cat => cat.label).join(', ');
-        }
-        const local = localMap.get(String(product.id));
-        return {
-          ...product,
-          price_ht: parseFloat(product.price),
-          price_ttc_number: parseFloat(product.price_ttc),
-          stock: product.stock_reel ? parseInt(product.stock_reel) : 0,
-          category: categoryLabel,
-          webLabel: local?.webLabel ?? null,
-          imageUrl: local?.imageUrl ?? null,
-        };
+      console.log('=== Produits récupérés de la base de données ===');
+      products.forEach(product => {
+        console.log(`Produit ${product.id}:`);
+        console.log('- Label:', product.label);
+        console.log('- Images:', product.images?.map(img => img.url));
       });
+      console.log('==========================================');
 
-      console.log(`✅ Produits récupérés (${productsWithCategories.length} résultats)`);
-      return productsWithCategories;
-    } catch (err) {
-      console.error('❌ Erreur récupération produits Dolibarr:', err.response?.data || err.message);
-      throw new Error(`Impossible de récupérer les produits : ${err.response?.data?.message || err.message}`);
+      return products.map(product => ({
+        id: String(product.id),
+        ref: product.ref,
+        label: product.label,
+        description: product.description,
+        price: product.priceHt.toString(),
+        price_ttc: product.priceTtc.toString(),
+        stock_reel: product.stock.toString(),
+        images: product.images?.map(img => img.url) || [],
+        webLabel: product.webLabel
+      }));
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits:', error);
+      throw error;
     }
   }
 
@@ -416,7 +392,7 @@ export class DolibarrService {
   }
 
   async updateWebLabel(productId: string, webLabel: string) {
-    const product = await this.productRepository.findOneBy({ id: productId });
+    const product = await this.productRepository.findOneBy({ id: Number(productId) });
     if (!product) throw new Error('Produit non trouvé');
     product.webLabel = webLabel;
     return this.productRepository.save(product);

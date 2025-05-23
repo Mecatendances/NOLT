@@ -29,9 +29,7 @@ export class ShopsController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('Aucun fichier');
-    const imageUrl = `/uploads/products/${file.filename}`;
-    await this.shopsService.updateProductImage(productId, imageUrl);
-    return { imageUrl };
+    return this.shopsService.addProductImage(productId, file);
   }
 
   @Patch(':id/web-label')

@@ -14,9 +14,10 @@ import { ConfigService, ConfigModule } from '@nestjs/config';
         username: config.get<string>('DB_USER', 'postgres'),
         password: config.get<string>('DB_PASS', 'postgres'),
         database: config.get<string>('DB_NAME', 'ecommerce'),
-        entities: [__dirname + '/../**/*.entity.{ts,js}'],
-        synchronize: true, // ⚠️ à désactiver en prod (utiliser des migrations)
+        entities: [__dirname + '/../**/*.entity.ts'],
+        synchronize: config.get<string>('TYPEORM_SYNCHRONIZE', 'true') === 'true', // true en dev, migrations en prod
         logging: true,
+        autoLoadEntities: true,
       }),
       inject: [ConfigService],
     }),

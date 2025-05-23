@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryColumn, ManyToOne, OneToMany } from 'typeorm';
+import { ProductEntity } from './product.entity';
 
 @Entity('categories')
 export class CategoryEntity {
@@ -19,4 +20,7 @@ export class CategoryEntity {
 
   @OneToMany(() => CategoryEntity, (child) => child.parent)
   children?: CategoryEntity[];
+
+  @OneToMany(() => ProductEntity, product => product.category)
+  products: ProductEntity[];
 } 

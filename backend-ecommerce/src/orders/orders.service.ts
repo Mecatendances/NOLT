@@ -5,7 +5,8 @@ import { OrderEntity } from './order.entity';
 import { OrderItemEntity } from './order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ProductEntity } from '../dolibarr/entities/product.entity';
-import { UserEntity } from '../users/user.entity';
+import { UserEntity } from '../users/entities/user.entity';
+import { UserRole } from '../users/user-role.enum';
 
 @Injectable()
 export class OrdersService {
@@ -24,7 +25,7 @@ export class OrdersService {
     let total = 0;
 
     for (const i of dto.items) {
-      const product = await this.productRepository.findOne({ where: { id: String(i.productId) } });
+      const product = await this.productRepository.findOne({ where: { id: Number(i.productId) } });
       if (!product) throw new Error(`Produit ${i.productId} introuvable`);
 
       const item = new OrderItemEntity();
@@ -47,8 +48,9 @@ export class OrdersService {
       user = await this.userRepository.findOne({ where: { email: dto.customerEmail } });
       if (!user) {
         user = this.userRepository.create({
-          name: dto.customerName,
           email: dto.customerEmail,
+          password: 'tempPassword@123',
+          role: UserRole.CLIENT,
           phone: dto.customerPhone,
           address: dto.address,
           zipCode: dto.zipCode,

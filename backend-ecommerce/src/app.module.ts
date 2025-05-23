@@ -14,7 +14,8 @@ import { OrdersModule } from './orders/orders.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { UsersModule } from './users/users.module';
 import { ShopsModule } from './shops/shops.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ProductsModule } from './products/products.module';
+import { ShopProductMetadataModule } from './shop-product-metadata/shop-product-metadata.module';
 
 @Module({
   imports: [
@@ -31,16 +32,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     CampaignsModule,
     UsersModule,
     ShopsModule,
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: '80PmrhDuCIBO61Z1',
-      database: 'ecommerce',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: process.env.NODE_ENV !== 'production',
-    }),
+    ProductsModule,
+    ShopProductMetadataModule,
   ],
   controllers: [AppController],
   providers: [AppService],

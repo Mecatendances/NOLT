@@ -164,12 +164,10 @@ export class DolibarrSyncService {
 
         for (const prod of dolibarrProducts) {
           const entity = new ProductEntity();
-          entity.id = String(prod.id);
+          entity.id = Number(prod.id);
           entity.ref = prod.ref;
           entity.label = prod.label;
 
-          // Les méthodes utilitaires du service ont déjà casté les prix/stock.
-          // On garde un fallback en cas d'évolution de l'API.
           const priceHt = typeof prod.price_ht === 'number' ? prod.price_ht : parseFloat(prod.price);
           const priceTtc = typeof prod.price_ttc_number === 'number' ? prod.price_ttc_number : parseFloat(prod.price_ttc);
           const stockVal = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock_reel || '0', 10);
@@ -177,31 +175,17 @@ export class DolibarrSyncService {
           entity.priceHt = Number.isFinite(priceHt) ? priceHt : 0;
           entity.priceTtc = Number.isFinite(priceTtc) ? priceTtc : 0;
           entity.stock = Number.isFinite(stockVal) ? stockVal : 0;
-
           entity.description = prod.description;
 
-          // Tentative de récupération d'une URL d'image si disponible
-          entity.imageUrl = (prod?.image || prod?.imageUrl || prod?.images?.[0]?.url) ?? undefined;
-
           let mainCatId: string | undefined;
-          if (Array.isArray(prod.categories) && prod.categories.length > 0) {
-            mainCatId = String(prod.categories[0].id);
+          if (prod.category) {
+            mainCatId = String(prod.category);
           } else {
             mainCatId = productFirstCategory.get(String(prod.id));
           }
 
           if (mainCatId) {
-            try {
-              const catRef = await this.categoryRepository.findOne({ where: { id: mainCatId } });
-              if (catRef) {
-                entity.categories = [catRef];
-              } else {
-                const newCategory = this.categoryRepository.create({ id: mainCatId });
-                entity.categories = [newCategory];
-              }
-            } catch (catLookupError) {
-              console.error(`❌ Erreur recherche catégorie ${mainCatId}:`, catLookupError);
-            }
+            entity.categoryId = Number(mainCatId);
           }
 
           prodEntities.push(entity);
@@ -248,13 +232,13 @@ export class DolibarrSyncService {
         console.log('🔍 Structure d\'un produit exemple:', JSON.stringify({
           id: sampleProduct.id,
           label: sampleProduct.label,
-          categories: sampleProduct.categories
+          category: sampleProduct.category
         }, null, 2));
       }
       
       // Compter les produits avec catégories
       const productsWithCategories = dolibarrProducts.filter(
-        p => p.categories && Array.isArray(p.categories) && p.categories.length > 0
+        p => typeof p.category === 'string' && p.category.length > 0
       );
       console.log(`ℹ️ ${productsWithCategories.length} produits sur ${dolibarrProducts.length} ont des catégories`);
       
@@ -265,43 +249,24 @@ export class DolibarrSyncService {
       for (const dolibarrProduct of dolibarrProducts) {
         const productId = dolibarrProduct.id;
         
-        // Vérifier si le produit a des catégories
-        if (dolibarrProduct.categories && Array.isArray(dolibarrProduct.categories)) {
-          console.log(`🔗 Traitement des catégories pour le produit ${productId} (${dolibarrProduct.label}) - ${dolibarrProduct.categories.length} catégorie(s)`);
-          
-          // Récupérer les IDs de catégorie
-          for (const category of dolibarrProduct.categories) {
-            if (category && category.id) {
-              productCategoryAssociations.push({
-                productId,
-                categoryId: category.id
-              });
-              console.log(`  - Catégorie ${category.id} (${category.label || 'Sans nom'})`);
-            } else {
-              console.warn(`⚠️ Catégorie invalide pour le produit ${productId}:`, category);
-            }
+        // Essayer de trouver d'autres propriétés potentielles contenant des catégories
+        const potentialCategoryFields = [
+          'categoriesObject', 'categoryIds', 'category_ids', 'catids', 'cat_ids'
+        ];
+        
+        for (const field of potentialCategoryFields) {
+          if (dolibarrProduct[field]) {
+            console.log(`  🔍 Propriété alternative trouvée '${field}':`, dolibarrProduct[field]);
           }
-        } else {
-          console.log(`⚠️ Produit ${productId} (${dolibarrProduct.label}) sans catégories`);
-          // Essayer de trouver d'autres propriétés potentielles contenant des catégories
-          const potentialCategoryFields = [
-            'categoriesObject', 'categoryIds', 'category_ids', 'catids', 'cat_ids'
-          ];
-          
-          for (const field of potentialCategoryFields) {
-            if (dolibarrProduct[field]) {
-              console.log(`  🔍 Propriété alternative trouvée '${field}':`, dolibarrProduct[field]);
-            }
-          }
-          
-          // Si le produit a une propriété 'category' simple, utilisons-la comme fallback
-          if (dolibarrProduct.category && typeof dolibarrProduct.category === 'string') {
-            console.log(`  💡 Utilisation du champ 'category' comme fallback: ${dolibarrProduct.category}`);
-            productCategoryAssociations.push({
-              productId,
-              categoryId: dolibarrProduct.category
-            });
-          }
+        }
+        
+        // Si le produit a une propriété 'category' simple, utilisons-la comme fallback
+        if (dolibarrProduct.category && typeof dolibarrProduct.category === 'string') {
+          console.log(`  💡 Utilisation du champ 'category' comme fallback: ${dolibarrProduct.category}`);
+          productCategoryAssociations.push({
+            productId,
+            categoryId: dolibarrProduct.category
+          });
         }
       }
       
@@ -347,15 +312,6 @@ export class DolibarrSyncService {
         sampleProducts.forEach((prod, index) => {
           console.log(`\nProduit #${index + 1} (${prod.id} - ${prod.label}):`);
           console.log('Propriétés disponibles:', Object.keys(prod));
-          
-          if (prod.categories) {
-            console.log('Type de categories:', typeof prod.categories);
-            if (Array.isArray(prod.categories)) {
-              console.log('Longueur du tableau categories:', prod.categories.length);
-            } else if (typeof prod.categories === 'object') {
-              console.log('Objet categories:', prod.categories);
-            }
-          }
           
           // Rechercher d'autres propriétés qui pourraient contenir des informations de catégorie
           Object.keys(prod).forEach(key => {
@@ -527,8 +483,8 @@ export class DolibarrSyncService {
           
           // Filtrer les associations valides (produit et catégorie existent en base)
           const validAssociations = productCategoryAssociations.filter(assoc => 
-            existingProductIds.has(assoc.productId.toString()) && 
-            existingCategoryIds.has(assoc.categoryId.toString())
+            existingProductIds.has(Number(assoc.productId)) &&
+            existingCategoryIds.has(String(assoc.categoryId))
           );
           
           console.log(`📥 Insertion de ${validAssociations.length} associations produit-catégorie valides (${productCategoryAssociations.length - validAssociations.length} ignorées)`);
@@ -588,7 +544,7 @@ export class DolibarrSyncService {
       const categoryIds = new Set((await this.categoryRepository.find({ select: ['id'] })).map(c => c.id));
 
       for (const assoc of associations) {
-        if (!productIds.has(assoc.productId)) {
+        if (!productIds.has(Number(assoc.productId))) {
           console.warn(`⚠️ Produit ${assoc.productId} manquant – association ignorée`);
           continue;
         }
@@ -613,7 +569,7 @@ export class DolibarrSyncService {
       return { inserted };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      console.error('❌ Erreur lors de l’insertion manuelle :', error);
+      console.error('❌ Erreur lors de l\'insertion manuelle :', error);
       throw error;
     } finally {
       await queryRunner.release();

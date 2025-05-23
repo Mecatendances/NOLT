@@ -233,13 +233,15 @@ export function Checkout() {
               <div className="space-y-4">
                 {items.map(({ product, quantity, size }) => (
                   <div key={`${product.id}-${size || 'nosize'}`} className="flex items-center gap-4">
-                    {product.image_url && (
-                      <img
-                        src={product.image_url}
-                        alt={product.label}
-                        className="h-16 w-16 rounded-lg object-cover"
-                      />
-                    )}
+                    <div className="flex-shrink-0">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.label}
+                          className="h-16 w-16 rounded-md object-cover"
+                        />
+                      ) : null}
+                    </div>
                     <div className="flex-1">
                       <h3 className="font-semibold font-montserrat">{product.label}</h3>
                       <p className="text-sm text-gray-500 font-montserrat">Quantité : {quantity}</p>

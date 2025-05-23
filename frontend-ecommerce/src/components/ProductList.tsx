@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ShoppingBag, Package } from 'lucide-react';
 import { Product } from '../types/shop';
 
@@ -9,6 +9,19 @@ interface ProductListProps {
 }
 
 export function ProductList({ products = [], onProductSelect, selectedProducts = [] }: ProductListProps) {
+  useEffect(() => {
+    console.log('ProductList - Produits reçus:', products);
+    products.forEach(product => {
+      console.log(`Produit ${product.id}:`, {
+        label: product.label,
+        webLabel: product.webLabel,
+        imageUrl: product.imageUrl,
+        price: product.price,
+        stock: product.stock
+      });
+    });
+  }, [products]);
+
   const isSelected = (product: Product) => 
     selectedProducts.some(p => p.id === product.id);
 
@@ -29,19 +42,19 @@ export function ProductList({ products = [], onProductSelect, selectedProducts =
             isSelected(product) ? 'border-nolt-orange bg-orange-50' : 'border-gray-200'
           }`}
         >
-          {product.image_url && (
-            <div className="mb-4 aspect-square overflow-hidden rounded-lg">
-              <img 
-                src={product.image_url} 
-                alt={product.label}
-                className="h-full w-full object-cover transition-transform hover:scale-105"
+          <div className="relative aspect-square overflow-hidden rounded-lg">
+            {product.images && product.images.length > 0 ? (
+              <img
+                src={product.images[0]}
+                alt={product.webLabel || product.label}
+                className="h-full w-full object-cover"
               />
-            </div>
-          )}
+            ) : null}
+          </div>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="font-thunder text-lg font-semibold text-nolt-black">
-                {product.label}
+              <h3 className="font-bold text-lg text-nolt-black">
+                {product.webLabel || product.label}
               </h3>
               <p className="mt-1 text-sm text-gray-500">{product.ref}</p>
               {product.description && (

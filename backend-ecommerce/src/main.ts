@@ -27,13 +27,16 @@ async function bootstrap() {
   });
 
   // Servir les fichiers statiques
-  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+  const uploadsPath = join(__dirname, '..', 'uploads');
+  console.log('📁 Chemin des uploads:', uploadsPath);
+  app.use('/uploads', express.static(uploadsPath));
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 4000;
   
   await app.listen(port, '0.0.0.0');
   console.log(`
 🚀 API démarrée sur : http://localhost:${port}/api
+📁 Fichiers statiques servis depuis : http://localhost:${port}/uploads
 `);
 }
 
