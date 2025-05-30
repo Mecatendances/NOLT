@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn } from 'typeorm';
-import { ProductEntity } from '../../dolibarr/entities/product.entity';
+import { ProductEntity } from '../../catalog/entities/product.entity';
 
 @Entity('product_images')
 export class ProductImage {

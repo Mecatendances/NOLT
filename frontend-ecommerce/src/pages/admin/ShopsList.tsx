@@ -1,5 +1,5 @@
 // Fichier minimal pour permettre au routing de fonctionner
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -16,7 +16,7 @@ import {
 import { shopApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Shop } from '../../types/shop';
-import { UserRole } from '../../types/userRole';
+import { GlobalRole } from '../../types/userRole';
 
 export function ShopsList() {
   const { user, hasRole } = useAuth();
@@ -28,7 +28,7 @@ export function ShopsList() {
   });
 
   useEffect(() => {
-    if (!isLoading && hasRole(UserRole.ADMIN) && !hasRole(UserRole.SUPERADMIN)) {
+    if (!isLoading && hasRole(GlobalRole.ADMIN) && !hasRole(GlobalRole.SUPERADMIN)) {
       // Trouver la boutique de l'admin
       const myShop = shops.find(shop => shop.adminId === user?.id);
       if (myShop) {
@@ -49,7 +49,7 @@ export function ShopsList() {
   }
 
   // Superadmin : liste des boutiques
-  if (hasRole(UserRole.SUPERADMIN)) {
+  if (hasRole(GlobalRole.SUPERADMIN)) {
     return (
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <h1 className="font-thunder text-4xl text-nolt-black mb-8">Toutes les Boutiques 🏪</h1>
@@ -79,12 +79,12 @@ export function ShopsList() {
                 </div>
               </div>
               <div className="mt-6 flex justify-end">
-                <a
-                  href={`/admin/shops/${shop.id}/products`}
+                <Link
+                  to={`/admin/shops/${shop.id}`}
                   className="inline-flex items-center gap-2 rounded-lg bg-nolt-yellow px-4 py-2 font-semibold text-nolt-black hover:bg-nolt-orange hover:text-white transition-all"
                 >
-                  👁️ Voir les produits
-                </a>
+                  👁️ Accéder à l'administration
+                </Link>
               </div>
             </div>
           ))}

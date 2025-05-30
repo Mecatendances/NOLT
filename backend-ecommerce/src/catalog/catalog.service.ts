@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ProductEntity } from '../dolibarr/entities/product.entity';
-import { CategoryEntity } from '../dolibarr/entities/category.entity';
+import { ProductEntity } from './entities/product.entity';
+import { CategoryEntity } from './entities/category.entity';
 import { ShopProductMetadataService, UpdateShopProductMetadataDto } from '../shop-product-metadata/shop-product-metadata.service';
 import { Shop } from '../shops/entities/shop.entity';
 
@@ -20,32 +20,79 @@ export class CatalogService {
 
   /* Produits ------------------------------------------------------ */
 
+  // Récupère récursivement tous les IDs locaux des sous-catégories à partir d'un dolibarrId racine
+  private async getAllSubCategoryIdsFromDolibarrId(dolibarrId: number): Promise<number[]> {
+    const root = await this.categoryRepository.findOne({ where: { dolibarrId } });
+    if (!root) return [];
+    const all = await this.categoryRepository.find();
+    const result: number[] = [];
+    const stack = all.filter(cat => cat.fkParent === root.id).map(cat => cat.id); // Commence par les enfants directs
+
+    while (stack.length) {
+      const current = stack.pop();
+      result.push(current);
+      const children = all.filter(cat => cat.fkParent === current);
+      for (const child of children) {
+        stack.push(child.id);
+      }
+    }
+    console.log(`[getAllSubCategoryIdsFromDolibarrId] Sous-catégories trouvées pour dolibarrId=${dolibarrId} (racine locale id=${root.id}):`, result);
+    return result;
+  }
+
   async getProducts(categoryId?: string, shopId?: string): Promise<ProductEntity[]> {
     console.log(`🔍 Recherche de produits ${categoryId ? `pour la catégorie ${categoryId}` : 'tous'} ${shopId ? `pour la boutique ${shopId}` : ''}`);
-    
     let products: ProductEntity[];
 
     if (categoryId) {
       try {
-        console.log(`📊 Exécution de la requête avec jointure sur la catégorie ${categoryId}`);
-        
-        const categoryExists = await this.categoryRepository.findOne({ where: { id: categoryId } });
-        console.log(`🏷️ Catégorie ${categoryId} existe: ${!!categoryExists}`);
-        
-        const count = await this.productRepository.manager.query(
-          'SELECT COUNT(*) FROM product_categories WHERE category_id = $1',
-          [categoryId]
-        );
-        console.log(`🔢 Nombre d'associations produit-catégorie pour ${categoryId}: ${count[0].count}`);
-        
-        products = await this.productRepository
-          .createQueryBuilder('product')
-          .leftJoinAndSelect('product.categories', 'category')
-          .leftJoinAndSelect('product.images', 'images')
-          .where('category.id = :categoryId', { categoryId })
-          .getMany();
-        
-        console.log(`📦 ${products.length} produits trouvés pour la catégorie ${categoryId}`);
+        // 1. On tente d'abord de trouver une catégorie par dolibarrId
+        const categoryByDolibarr = await this.categoryRepository.findOne({ where: { dolibarrId: Number(categoryId) } });
+        if (categoryByDolibarr) {
+          // On récupère toutes les sous-catégories (récursif)
+          const allCatIds = await this.getAllSubCategoryIdsFromDolibarrId(Number(categoryId));
+          if (allCatIds.length === 0) {
+            console.log(`[getProducts] Aucune sous-catégorie trouvée pour dolibarrId=${categoryId} (racine locale id=${categoryByDolibarr.id})`);
+            return [];
+          }
+          console.log(`[getProducts] Recherche produits pour sous-catégories (ids) :`, allCatIds);
+          products = await this.productRepository
+            .createQueryBuilder('product')
+            .leftJoinAndSelect('product.categories', 'category')
+            .leftJoinAndSelect('product.images', 'images')
+            .where('category.category_id IN (:...catIds)', { catIds: allCatIds })
+            .getMany();
+          console.log(`📦 ${products.length} produits trouvés pour la catégorie Dolibarr ${categoryId} (et ses sous-catégories)`);
+        } else {
+          // 2. Sinon, on tente par id local
+          const categoryById = await this.categoryRepository.findOne({ where: { id: Number(categoryId) } });
+          if (!categoryById) {
+            console.log(`[getProducts] Aucune catégorie trouvée pour id local=${categoryId}`);
+            return [];
+          }
+          // On regarde s'il y a des sous-catégories
+          const subcats = await this.categoryRepository.find({ where: { fkParent: categoryById.id } });
+          if (subcats.length > 0) {
+            const allCatIds = subcats.map(cat => cat.id);
+            console.log(`[getProducts] Recherche produits pour sous-catégories directes de la racine locale id=${categoryById.id} :`, allCatIds);
+            products = await this.productRepository
+              .createQueryBuilder('product')
+              .leftJoinAndSelect('product.categories', 'category')
+              .leftJoinAndSelect('product.images', 'images')
+              .where('category.category_id IN (:...catIds)', { catIds: allCatIds })
+              .getMany();
+            console.log(`📦 ${products.length} produits trouvés pour les sous-catégories de la racine locale ${categoryId}`);
+          } else {
+            // fallback : produits de la catégorie locale elle-même
+            products = await this.productRepository
+              .createQueryBuilder('product')
+              .leftJoinAndSelect('product.categories', 'category')
+              .leftJoinAndSelect('product.images', 'images')
+              .where('category.category_id = :categoryId', { categoryId: Number(categoryId) })
+              .getMany();
+            console.log(`📦 ${products.length} produits trouvés pour la catégorie locale ${categoryId}`);
+          }
+        }
       } catch (error) {
         console.error(`❌ Erreur lors de la recherche des produits par catégorie ${categoryId}:`, error);
         throw error;
@@ -165,12 +212,16 @@ export class CatalogService {
 
   async getCategories(parentId?: string): Promise<CategoryEntity[]> {
     if (parentId) {
-      return this.categoryRepository.find({ where: { fkParent: parentId } });
+      return this.categoryRepository.find({ where: { parent: { id: Number(parentId) } } });
     }
     return this.categoryRepository.find();
   }
 
   async getCategory(id: string): Promise<CategoryEntity | null> {
-    return this.categoryRepository.findOne({ where: { id } });
+    return this.categoryRepository.findOne({ where: { id: Number(id) } });
+  }
+
+  async findCategoryByDolibarrId(dolibarrId: number) {
+    return this.categoryRepository.findOne({ where: { dolibarrId } });
   }
 } 

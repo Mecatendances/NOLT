@@ -2,9 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Product, DolibarrProduct, DolibarrImage, CategoryTree } from './interfaces';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ProductEntity } from './entities/product.entity';
 
 @Injectable()
 export class DolibarrService {
@@ -14,8 +11,6 @@ export class DolibarrService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-    @InjectRepository(ProductEntity)
-    private readonly productRepository: Repository<ProductEntity>,
   ) {
     this.baseUrl = this.configService.get<string>('DOLIBARR_API_URL');
     this.apiKey = this.configService.get<string>('DOLIBARR_API_KEY');
@@ -25,37 +20,8 @@ export class DolibarrService {
   }
 
   async getProducts(categoryId?: number, page = 0, includeStock = false): Promise<DolibarrProduct[]> {
-    try {
-      // Récupérer les produits depuis la base de données avec leurs images
-      const query = this.productRepository.createQueryBuilder('product')
-        .leftJoinAndSelect('product.images', 'images')
-        .orderBy('images.order', 'ASC');
-
-      const products = await query.getMany();
-      
-      console.log('=== Produits récupérés de la base de données ===');
-      products.forEach(product => {
-        console.log(`Produit ${product.id}:`);
-        console.log('- Label:', product.label);
-        console.log('- Images:', product.images?.map(img => img.url));
-      });
-      console.log('==========================================');
-
-      return products.map(product => ({
-        id: String(product.id),
-        ref: product.ref,
-        label: product.label,
-        description: product.description,
-        price: product.priceHt.toString(),
-        price_ttc: product.priceTtc.toString(),
-        stock_reel: product.stock.toString(),
-        images: product.images?.map(img => img.url) || [],
-        webLabel: product.webLabel
-      }));
-    } catch (error) {
-      console.error('Erreur lors de la récupération des produits:', error);
-      throw error;
-    }
+    // TODO: Remplacer par appel à l'API Dolibarr ou logique adaptée
+    return [];
   }
 
   async getCategories() {
@@ -392,9 +358,40 @@ export class DolibarrService {
   }
 
   async updateWebLabel(productId: string, webLabel: string) {
-    const product = await this.productRepository.findOneBy({ id: Number(productId) });
-    if (!product) throw new Error('Produit non trouvé');
-    product.webLabel = webLabel;
-    return this.productRepository.save(product);
+    // const product = await this.productRepository.findOneBy({ id: Number(productId) });
+    // if (!product) throw new Error('Produit non trouvé');
+    // product.webLabel = webLabel;
+    // return this.productRepository.save(product);
+  }
+
+  async getCategoryProducts(categoryId: number, includeStock = true) {
+    try {
+      const url = `${this.baseUrl}/categories/${categoryId}/objects`;
+      const params: any = {
+        DOLAPIKEY: this.apiKey,
+        type: 'product',
+        limit: 999999,
+        includestockdata: includeStock ? 1 : 0,
+        withcategories: 1
+      };
+      console.log(`📡 Requête Dolibarr cat-objects: ${url}`, params);
+      const response = await this.httpService.axiosRef.get(url, { params });
+      if (Array.isArray(response.data)) {
+        return response.data.map(product => ({
+          ...product,
+          price_ht: parseFloat(product.price),
+          price_ttc_number: parseFloat(product.price_ttc),
+          stock: product.stock_reel ? parseInt(product.stock_reel) : 0,
+        }));
+      }
+      return [];
+    } catch (err) {
+      if (err?.response?.status === 404) {
+        console.warn(`cat-objects 404 pour la catégorie ${categoryId}`);
+        return [];
+      }
+      console.error('Erreur cat-objects', err.response?.data || err.message);
+      return [];
+    }
   }
 }

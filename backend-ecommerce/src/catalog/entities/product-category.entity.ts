@@ -1,16 +1,15 @@
-import { Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, PrimaryColumn, Index } from 'typeorm';
 import { ProductEntity } from './product.entity';
 import { CategoryEntity } from './category.entity';
 
 @Entity('product_categories')
 export class ProductCategoryEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ name: 'product_id' })
+  @PrimaryColumn({ name: 'product_id', type: 'int' })
+  @Index()
   productId: number;
 
-  @Column({ name: 'category_id' })
+  @PrimaryColumn({ name: 'category_id', type: 'int' })
+  @Index()
   categoryId: number;
 
   @ManyToOne(() => ProductEntity, { onDelete: 'CASCADE' })

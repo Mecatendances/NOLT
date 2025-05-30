@@ -1,8 +1,10 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { userApi } from '../services/api';
+import { userApi, userShopRoleApi } from '../services/api';
 import { Download, User, Mail, Phone, MapPin, Building2, Package, ShoppingBag, Crown, Store } from 'lucide-react';
+import { ShopRole } from '../types/userRole';
+import { Link } from 'react-router-dom';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -41,11 +43,16 @@ const formatDate = (date: string) => {
 };
 
 export function Profile() {
-  const { user } = useAuth();
+  const { user, hasShopRole } = useAuth();
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['my-orders'],
     queryFn: userApi.getMyOrders,
+  });
+
+  const { data: userShopRoles = [] } = useQuery({
+    queryKey: ['my-shop-roles'],
+    queryFn: userShopRoleApi.getAllUserShopRoles,
   });
 
   if (!user) return null;
@@ -80,7 +87,40 @@ export function Profile() {
             {roleBadge.label}
           </span>
         </div>
+        {hasShopRole && hasShopRole(undefined, ShopRole.SHOP_ADMIN) && (
+          <Link
+            to="/my-shops"
+            className="ml-6 px-4 py-2 bg-nolt-yellow text-nolt-black rounded-lg hover:bg-nolt-orange hover:text-white transition-colors font-montserrat"
+          >
+            Mes boutiques
+          </Link>
+        )}
       </div>
+
+      {/* Affichage des rôles locaux (SHOP_ADMIN uniquement, avec lien admin et public) */}
+      {userShopRoles.filter((usr: any) => usr.role === 'SHOP_ADMIN').length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-thunder text-nolt-black mb-2">Mes boutiques administrées</h2>
+          <ul className="list-disc ml-6">
+            {userShopRoles.filter((usr: any) => usr.role === 'SHOP_ADMIN').map((usr: any) => (
+              <li key={usr.shop?.id + '-' + usr.role} className="flex items-center gap-2">
+                <span className="font-semibold text-nolt-orange">ADMIN</span>
+                {usr.shop && (
+                  <>
+                    {" de la boutique "}
+                    <Link to={`/shops/${usr.shop.id}/admin`} className="font-semibold underline text-nolt-orange hover:text-nolt-yellow mr-2">
+                      {usr.shop.name}
+                    </Link>
+                    <Link to={`/public/shops/${usr.shop.id}`} className="text-sm text-nolt-yellow underline hover:text-nolt-orange" title="Voir la boutique publique">
+                      (voir public)
+                    </Link>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="bg-white p-6 rounded-lg shadow-sm mb-10 border border-gray-200 hover:border-nolt-yellow transition-all duration-300">
         <h2 className="text-2xl font-thunder italic mb-6 text-nolt-black">Mes informations</h2>

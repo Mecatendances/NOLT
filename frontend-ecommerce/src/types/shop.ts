@@ -18,6 +18,7 @@ export interface Shop {
   description: string;
   products: Product[];
   adminId: string;
+  dolibarrCategoryId: number;
   orders?: any[];
   created_at: string;
   updated_at: string;

@@ -9,7 +9,7 @@ import {
   Index
 } from 'typeorm';
 import { Shop } from '../../shops/entities/shop.entity'; // Chemin corrigé, était ../../catalog/shop.entity
-import { ProductEntity } from '../../dolibarr/entities/product.entity'; // AJOUT
+import { ProductEntity } from '../../catalog/entities/product.entity';
 
 @Entity('shop_product_metadata')
 @Index(['shopId', 'productId'], { unique: true }) // Assure une seule entrée par shop/produit

@@ -18,236 +18,218 @@ export function AdminShopCatalog() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-
-  // ID de la catégorie Dolibarr cible pour cette instance de la page admin catalogue
-  // À terme, cela pourrait venir d'une prop, d'un paramètre d'URL, ou d'une config utilisateur
-  const targetDolibarrCategoryId = '183'; 
-
-  // Récupérer l'entité Shop (qui contient l'UUID) basée sur le targetDolibarrCategoryId
-  const { data: shopEntity, isLoading: isLoadingShopEntity, error: shopEntityError } = useQuery<Shop | null>({
-    queryKey: ['shop-by-dolibarr-category', targetDolibarrCategoryId],
-    queryFn: async () => {
-      if (!targetDolibarrCategoryId) return null;
-      try {
-        return await shopApi.getShopByDolibarrCategoryId(targetDolibarrCategoryId);
-      } catch (err) {
-        console.error('Erreur récupération ShopEntity by Dolibarr Category ID:', err);
-        setError('Impossible de lier à une boutique. Vérifiez sa configuration ou créez-la.');
-        return null;
-      }
-    },
-    enabled: !!targetDolibarrCategoryId, // Activer seulement si targetDolibarrCategoryId est défini
-  });
-
-  // L'UUID de la boutique à utiliser pour les opérations. 
-  // C'est CE shopId qui doit être utilisé pour mettre à jour le webLabel custom.
-  const actualShopUuid = shopEntity?.id;
-
-  useEffect(() => {
-    if (shopEntityError) {
-      setError('Erreur chargement de la boutique: ' + (shopEntityError as Error).message);
-    }
-    if (!isLoadingShopEntity && !shopEntity && targetDolibarrCategoryId) {
-      // Gérer le cas où la boutique n'existe pas encore pour ce dolibarrCategoryId
-      // On pourrait afficher un message différent ou un bouton pour la créer.
-      console.warn(`Aucune ShopEntity trouvée pour dolibarrCategoryId: ${targetDolibarrCategoryId}`);
-      //setError(`Aucune boutique configurée pour la catégorie Dolibarr ${targetDolibarrCategoryId}. Veuillez la créer.`);
-    }
-  }, [shopEntity, isLoadingShopEntity, shopEntityError, targetDolibarrCategoryId]);
-  
-  // Pour les appels existants qui utilisaient l'ancien shopId (qui était un categoryId)
-  // Nous devons décider s'ils doivent utiliser targetDolibarrCategoryId ou actualShopUuid.
-  // getCategoriesFilles attendait un categoryId, donc on garde targetDolibarrCategoryId.
-  const { data: fcSubcategoriesData = [], isLoading: loadingSubCat, error: subCatError } = useQuery<any[]>({
-    queryKey: ['admin-fc-subcategories', targetDolibarrCategoryId], // Utilise targetDolibarrCategoryId
-    queryFn: async () => {
-      if (!targetDolibarrCategoryId) return [];
-      try {
-        return await shopApi.getCategoriesFilles(targetDolibarrCategoryId);
-      } catch (err) {
-        console.error('Erreur lors de la récupération des sous-catégories:', err);
-        setError('Impossible de charger les catégories. Veuillez réessayer.');
-        return [];
-      }
-    },
-    enabled: !!targetDolibarrCategoryId, // Activer si targetDolibarrCategoryId est là
-  });
-
-  const fcSubCategories: CategoryTree[] = useMemo(() => (
-    fcSubcategoriesData.map(sc => ({ id: String(sc.id), label: sc.label }))
-  ), [fcSubcategoriesData]);
-
-  // getProducts peut maintenant prendre un shopId (UUID) pour charger les webLabels customisés
-  const { data: products = [], isLoading: loadingProd } = useQuery<Product[]>({
-    queryKey: ['admin-fc-products', fcSubCategories.map(c=>c.id).join(','), actualShopUuid], // Ajout de actualShopUuid à la clé
-    enabled: fcSubCategories.length > 0 && !!actualShopUuid, // S'assurer que shop UUID est là aussi
-    queryFn: async () => {
-      if (!actualShopUuid) return []; // Ne pas fetcher si on n'a pas l'UUID du shop
-      const all = await Promise.all(fcSubCategories.map(async sub => {
-        // Ici, getProducts prend le categoryId (sub.id) ET le shopId (actualShopUuid)
-        const prods = await shopApi.getProducts({ category: sub.id, shopId: actualShopUuid }); 
-        return prods.map(p => ({ ...p, subCategoryIds: [...(p.subCategoryIds ?? []), sub.id] }));
-      }));
-      return all.flat();
-    }
-  });
-  
-  const loadingCat = loadingSubCat || isLoadingShopEntity; // isLoadingShopEntity est important ici
-
-  /* -------------------- construire set ids ----------------- */
-  const fcCategoryIds: Set<string> = useMemo(() => {
-    const ids = new Set<string>();
-    const walk = (cat?: CategoryTree) => {
-      if (!cat) return;
-      ids.add(cat.id);
-      cat.children?.forEach(walk);
-    };
-    fcSubCategories.forEach(walk);
-    return ids;
-  }, [fcSubCategories]);
-
-  // Ne garder que les produits appartenant aux sous-catégories ou à la catégorie racine
-  const fcProducts = useMemo(() => {
-    return products.filter(p => {
-      if (p.category && fcCategoryIds.has(p.category)) return true;
-      if (p.subCategoryIds?.some(id => fcCategoryIds.has(id))) return true;
-      return false;
-    });
-  }, [products, fcCategoryIds]);
-
-  /* ------------------ catégories d'affichage -------------- */
-  const categories: DisplayCategory[] = useMemo(() => {
-    const result: DisplayCategory[] = [{ id: 'all', name: 'Tous', count: fcProducts.length }];
-    fcSubCategories.forEach(sub => {
-      const count = fcProducts.filter(p =>
-        p.subCategoryIds?.includes(sub.id) || p.category === sub.id
-      ).length;
-      result.push({ id: sub.id, name: sub.label, subcategoryId: sub.id, count });
-    });
-    return result;
-  }, [fcSubCategories, fcProducts]);
-
-  /* ------------------ filtrage produits ------------------- */
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
-  const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'all') return fcProducts;
-    console.log('Produits filtrés:', fcProducts);
-    return fcProducts.filter(p =>
-      p.category === selectedCategory || p.subCategoryIds?.includes(selectedCategory)
-    );
-  }, [selectedCategory, fcProducts]);
-
+  const [isLoadingCategory, setIsLoadingCategory] = useState(true);
+  const [fcChalonSubcategories, setFcChalonSubcategories] = useState<{id: string, label: string}[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>('all');
   const [popupProduct, setPopupProduct] = useState<Product | null>(null);
 
-  // Log pour déboguer
+  // 1. Charger toutes les catégories et trouver la racine FC Chalon
   useEffect(() => {
-    console.log('Produits FC:', fcProducts);
-  }, [fcProducts]);
+    setIsLoadingCategory(true);
+    setError(null);
+    shopApi.getCategories().then((categories) => {
+      // On suppose que getCategories retourne toutes les catégories avec dolibarrId
+      fetch('http://localhost:4000/api/catalog/categories')
+        .then(res => res.json())
+        .then(async (allCategories) => {
+          const racine = allCategories.find((cat: any) => cat.dolibarrId === 183);
+          if (!racine) {
+            setFcChalonSubcategories([]);
+            setIsLoadingCategory(false);
+            setError('Catégorie racine non trouvée');
+            return;
+          }
+          // 2. Charger les sous-catégories de la racine
+          fetch(`http://localhost:4000/api/catalog/categories?parent=${racine.id}`)
+            .then(res => res.json())
+            .then(async (subcats) => {
+              const subCategories = subcats.map((cat: any) => ({ id: String(cat.id), label: cat.label }));
+              setFcChalonSubcategories(subCategories);
+              setIsLoadingCategory(false);
+            });
+        });
+    });
+  }, []);
 
-  // Gestion de l'état d'erreur combiné
+  // Générer dynamiquement les catégories d'affichage à partir des sous-catégories
+  const categories = useMemo<DisplayCategory[]>(() => {
+    const dynamicCategories: DisplayCategory[] = [
+      { id: 'all', name: 'Tous les produits', count: 0 }
+    ];
+    fcChalonSubcategories.forEach(subcat => {
+      const id = subcat.label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      dynamicCategories.push({
+        id,
+        name: subcat.label,
+        count: 0,
+        subcategoryId: subcat.id
+      });
+    });
+    return dynamicCategories;
+  }, [fcChalonSubcategories]);
+
+  // Récupérer les produits de la catégorie sélectionnée ou tous les produits
+  const { data: selectedCategoryProducts = [], isLoading } = useQuery<Product[]>({
+    queryKey: ['admin-products-fc-chalon', selectedCategory],
+    queryFn: async () => {
+      const selectedCatObj = categories.find(cat => cat.id === selectedCategory);
+      if (selectedCategory && selectedCategory !== 'all' && selectedCatObj?.subcategoryId) {
+        return shopApi.getProducts({ category: selectedCatObj.subcategoryId });
+      }
+      const allProductsPromises = fcChalonSubcategories.map(
+        subcat => shopApi.getProducts({ category: subcat.id })
+      );
+      const results = await Promise.all(allProductsPromises);
+      return results.flat();
+    },
+    enabled: !isLoadingCategory
+  });
+
+  // Mettre à jour le compteur de produits pour chaque catégorie
   useEffect(() => {
-    if (subCatError) {
-        setError('Impossible de charger les catégories. Veuillez réessayer.');
+    if (selectedCategoryProducts.length > 0) {
+      const selectedCat = categories.find(cat => cat.id === selectedCategory);
+      if (selectedCat) {
+        const updatedCategories = categories.map(cat => {
+          if (cat.id === selectedCategory) {
+            return { ...cat, count: selectedCategoryProducts.length };
+          }
+          return cat;
+        });
+        categories.splice(0, categories.length, ...updatedCategories);
+      }
     }
-    // L'erreur pour shopEntity est déjà gérée dans son propre useEffect
-  }, [subCatError]);
-  
-  const combinedError = error; // Utiliser l'état d'erreur local qui est mis à jour par les différentes requêtes
+  }, [selectedCategoryProducts, selectedCategory]);
 
-  if (combinedError) {
+  const filteredProducts = selectedCategoryProducts;
+
+  if (isLoading || isLoadingCategory) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-          <p className="mt-4 font-montserrat text-red-500">{combinedError}</p>
-          <button
-            onClick={() => window.location.reload()} // ou une logique de refetch plus ciblée
-            className="mt-4 px-4 py-2 bg-nolt-orange text-white rounded-lg hover:bg-nolt-yellow"
-          >
-            Réessayer
-          </button>
+          <ShoppingBag className="mx-auto h-12 w-12 animate-bounce text-nolt-yellow" />
+          <p className="mt-4 font-montserrat text-nolt-black">Chargement des produits...</p>
         </div>
       </div>
     );
   }
 
-  if (loadingProd || loadingCat || isLoadingShopEntity) {
-    return (
-      <div className="flex h-96 items-center justify-center text-nolt-orange font-montserrat">Chargement…</div>
-    );
+  if (error) {
+    return <div>Erreur lors du chargement des sous-catégories.</div>;
   }
-  
+  if (!isLoadingCategory && fcChalonSubcategories && fcChalonSubcategories.length === 0) {
+    return <div>Aucune sous-catégorie trouvée.</div>;
+  }
+
   return (
-    <div className="p-6 space-y-8">
-      <div className="flex flex-wrap gap-2">
-        {categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-4 py-2 rounded-lg font-montserrat text-sm transition-colors ${
-              selectedCategory === cat.id
-                ? 'bg-nolt-orange text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {cat.name} ({cat.count})
-          </button>
-        ))}
+    <div className="container mx-auto max-w-7xl px-4 py-12">
+      <div className="flex flex-col lg:flex-row gap-8" id="product-grid">
+        {/* Sidebar catégories */}
+        <div className="lg:w-64 bg-white">
+          <div className="sticky top-20">
+            <div className="border-b pb-6 mb-6 bg-white rounded-lg p-4 shadow-sm">
+              <h2 className="text-xl font-thunder italic uppercase text-nolt-black mb-4">Catégories</h2>
+              <ul className="space-y-1">
+                {categories.map((category) => (
+                  <li key={category.id}>
+                    <button
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`flex items-center justify-between w-full text-left font-montserrat rounded-lg px-3 py-2 transition-all
+                        ${selectedCategory === category.id
+                          ? 'bg-nolt-orange text-white font-bold shadow'
+                          : 'text-gray-500 hover:bg-nolt-yellow hover:text-nolt-black'}
+                      `}
+                    >
+                      <span>{category.name}</span>
+                      <span className="text-sm text-gray-300 font-normal">({category.count})</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Grille produits */}
+        <div className="flex-1">
+          <p className="mb-8 text-gray-500 font-montserrat">
+            {filteredProducts.length} produits disponibles
+          </p>
+          <div className="transition-opacity opacity-100">
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16 bg-gray-50 rounded-lg">
+                <h3 className="text-xl font-thunder italic uppercase text-gray-900 mb-2">Aucun produit trouvé</h3>
+                <p className="mt-2 text-gray-500 font-montserrat">
+                  Essayez de modifier vos filtres ou sélectionnez une autre catégorie.
+                </p>
+                <button 
+                  onClick={() => setSelectedCategory('all')}
+                  className="mt-4 text-nolt-orange hover:text-nolt-yellow transition-colors font-montserrat"
+                >
+                  Voir tous les produits
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
+                {filteredProducts.map((product) => (
+                  <div 
+                    key={product.id} 
+                    className="group border border-gray-200 hover:border-nolt-yellow transition-all duration-300 rounded-lg overflow-hidden flex flex-col bg-white"
+                  >
+                    <div 
+                      className="w-full relative cursor-pointer"
+                      onClick={() => setPopupProduct(product)}
+                    >
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.webLabel || product.label}
+                          className="w-full aspect-square object-cover"
+                        />
+                      ) : (
+                        <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
+                          <Image className="h-12 w-12 text-gray-300" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 p-5 flex flex-col">
+                      <h3 
+                        className="font-thunder text-xl uppercase text-nolt-black group-hover:text-nolt-orange transition-colors leading-tight cursor-pointer"
+                        onClick={() => setPopupProduct(product)}
+                      >
+                        {product.label}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1 font-montserrat">{product.ref}</p>
+                      {product.description && (
+                        <p className="text-sm text-gray-600 mt-3 font-montserrat line-clamp-2">
+                          {product.description}
+                        </p>
+                      )}
+                      <div className="flex justify-between items-end mt-5">
+                        <p className="text-2xl font-thunder italic text-nolt-yellow">
+                          {typeof product.price === 'number' ? product.price.toFixed(2) : '—'}€
+                        </p>
+                        <button 
+                          onClick={() => setPopupProduct(product)}
+                          className="px-4 py-2 border border-gray-300 rounded-lg hover:border-nolt-yellow hover:text-nolt-yellow transition-colors font-montserrat"
+                        >
+                          Modifier
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {filteredProducts.length === 0 && !isLoadingShopEntity && !loadingCat && !loadingProd ? (
-        <p className="text-center text-gray-500 font-montserrat">
-          {actualShopUuid ? 'Aucun produit pour cette catégorie.' : `Boutique non trouvée pour la catégorie Dolibarr ${targetDolibarrCategoryId}. Veuillez la créer ou vérifier la configuration.`}
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map(prod => {
-            console.log('Affichage Produit:', { id: prod.id, label: prod.label, webLabel: prod.webLabel });
-            const displayLabel = prod.webLabel;
-            const originalLabelDolibarr = prod.label;
-            const showOriginalLabelInParentheses = prod.webLabel !== originalLabelDolibarr;
-
-            return (
-              <div key={prod.id} className="relative border rounded-lg p-4 bg-white hover:shadow">
-                <button
-                  onClick={() => setPopupProduct(prod)}
-                  disabled={!actualShopUuid} // Désactiver si pas d'UUID de boutique
-                  className="absolute top-2 right-2 p-1 bg-nolt-orange/90 rounded text-white hover:bg-nolt-yellow disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-
-                <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-gray-100">
-                  <img
-                    src={prod.images && prod.images.length > 0 ? prod.images[0] : '/placeholder.png'}
-                    alt={prod.webLabel || prod.label}
-                    className="h-full w-full object-cover object-center"
-                  />
-                </div>
-                <h3 className="mt-4 font-thunder text-lg text-nolt-black">
-                  <>
-                    <span className={showOriginalLabelInParentheses ? "text-nolt-orange" : ""}>
-                      {displayLabel}
-                    </span>
-                    {showOriginalLabelInParentheses && (
-                      <span className="text-sm text-gray-500 ml-2">({originalLabelDolibarr})</span>
-                    )}
-                  </>
-                </h3>
-                <p className="text-sm text-gray-500 font-montserrat">Réf : {prod.ref}</p>
-                <p className="font-thunder text-nolt-orange mt-2">{prod.price.toFixed(2)} €</p>
-                <p className="text-xs text-gray-500 font-montserrat">Stock : {prod.stock}</p>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {popupProduct && actualShopUuid && (
+      {/* Popup admin pour édition produit */}
+      {popupProduct && (
         <AdminProductDetailPopup
           product={popupProduct}
-          shopId={actualShopUuid} // Utilisation de l'UUID ici
+          shopId={''}
           isOpen={true}
           onClose={() => setPopupProduct(null)}
         />

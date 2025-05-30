@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProductEntity } from '../dolibarr/entities/product.entity';
+import { ProductEntity } from '../catalog/entities/product.entity';
 import { ProductImage } from './entities/product-image.entity';
 import { ProductsController } from './controllers/products.controller';
 import { ProductImageController } from './controllers/product-image.controller';

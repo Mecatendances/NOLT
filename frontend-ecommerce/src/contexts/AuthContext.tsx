@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { User, AuthState } from '../types/auth';
-import { UserRole } from '../types/userRole';
+import { GlobalRole } from '../types/userRole';
 import { api } from '../services/api';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  hasRole: (...allowed: UserRole[]) => boolean;
+  hasRole: (...allowed: GlobalRole[]) => boolean;
   isAdmin: () => boolean;
 }
 
@@ -55,9 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: payload.sub,
           email: payload.email,
           name: payload.name,
-          role: payload.role as UserRole,
+          role: payload.role as GlobalRole,
           licenseeShops: payload.licenseeShops,
-          isAdmin: [UserRole.ADMIN, UserRole.SUPERADMIN].includes(payload.role)
+          isAdmin: [GlobalRole.ADMIN, GlobalRole.SUPERADMIN].includes(payload.role)
         };
         setState({ user, isAuthenticated: true, isLoading: false });
         return;
@@ -82,14 +82,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: payload.sub,
         email: payload.email,
         name: payload.name,
-        role: payload.role as UserRole,
+        role: payload.role as GlobalRole,
         licenseeShops: payload.licenseeShops,
-        isAdmin: [UserRole.ADMIN, UserRole.SUPERADMIN].includes(payload.role)
+        isAdmin: [GlobalRole.ADMIN, GlobalRole.SUPERADMIN].includes(payload.role)
       };
 
       localStorage.setItem('user', JSON.stringify(user));
       setState({ user, isAuthenticated: true, isLoading: false });
-      navigate('/');
+
+      // Redirection selon le rôle
+      if (user.role === GlobalRole.SUPERADMIN) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (error: any) {
       console.error('Erreur de connexion', error);
       setState({ user: null, isAuthenticated: false, isLoading: false });
@@ -104,12 +110,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate('/login');
   };
 
-  const hasRole = (...allowed: UserRole[]): boolean => {
+  const hasRole = (...allowed: GlobalRole[]): boolean => {
     if (!state.user) return false;
-    return allowed.includes(state.user.role as UserRole);
+    return allowed.includes(state.user.role as GlobalRole);
   };
 
-  const isAdmin = () => hasRole(UserRole.SUPERADMIN, UserRole.ADMIN);
+  const isAdmin = () => hasRole(GlobalRole.SUPERADMIN, GlobalRole.ADMIN);
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout, hasRole, isAdmin }}>

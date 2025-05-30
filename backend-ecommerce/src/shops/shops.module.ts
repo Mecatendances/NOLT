@@ -4,15 +4,17 @@ import { ShopsController as DolibarrProductsShopController } from './shops.contr
 import { ShopController } from './shop.controller';
 import { ShopsService } from './shops.service';
 import { Shop } from './entities/shop.entity';
-import { ProductEntity } from '../dolibarr/entities/product.entity';
+import { ProductEntity } from '../catalog/entities/product.entity';
 import { ProductsModule } from '../products/products.module';
 import { CatalogModule } from '../catalog/catalog.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Shop, ProductEntity]),
     ProductsModule,
     CatalogModule,
+    UsersModule,
   ],
   controllers: [
     DolibarrProductsShopController,

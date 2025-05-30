@@ -5,7 +5,7 @@ import { Store, Plus, ShoppingBag, Package } from 'lucide-react';
 import { shopApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Shop } from '../../types/shop';
-import { UserRole } from '../../types/userRole';
+import { GlobalRole } from '../../types/userRole';
 
 export function ShopsList() {
   const { user, hasRole } = useAuth();
@@ -16,14 +16,16 @@ export function ShopsList() {
 
   // Filtrer les boutiques en fonction du rôle
   const filteredShops = React.useMemo(() => {
-    if (hasRole(UserRole.SUPERADMIN)) {
+    if (hasRole(GlobalRole.SUPERADMIN)) {
       return shops; // Les super admins voient toutes les boutiques
-    } else if (hasRole(UserRole.ADMIN)) {
+    } else if (hasRole(GlobalRole.ADMIN)) {
       return shops.filter(shop => shop.adminId === user?.id); // Les admins ne voient que leurs boutiques
     } else {
       return shops.filter(shop => user?.licenseeShops?.includes(shop.id)); // Les autres utilisateurs ne voient que les boutiques auxquelles ils sont associés
     }
   }, [shops, user, hasRole]);
+
+  console.log('filteredProducts', filteredShops);
 
   if (isLoading) {
     return (
@@ -40,9 +42,9 @@ export function ShopsList() {
     <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="font-thunder text-4xl text-nolt-black">
-          {hasRole(UserRole.SUPERADMIN) ? "Toutes les Boutiques 🏪" : "Mes Boutiques 🏪"}
+          {hasRole(GlobalRole.SUPERADMIN) ? "Toutes les Boutiques 🏪" : "Mes Boutiques 🏪"}
         </h1>
-        {hasRole(UserRole.SUPERADMIN, UserRole.ADMIN) && (
+        {hasRole(GlobalRole.SUPERADMIN, GlobalRole.ADMIN) && (
           <Link
             to="/create-shop"
             className="flex items-center gap-2 rounded-xl bg-nolt-orange px-4 py-2 font-semibold text-white transition-all hover:bg-orange-600"
@@ -57,16 +59,16 @@ export function ShopsList() {
         <div className="rounded-xl bg-orange-50 p-8 text-center">
           <Store className="mx-auto h-16 w-16 text-nolt-orange" />
           <h2 className="mt-4 font-thunder text-2xl text-nolt-black">
-            {hasRole(UserRole.SUPERADMIN, UserRole.ADMIN) 
+            {hasRole(GlobalRole.SUPERADMIN, GlobalRole.ADMIN) 
               ? "Pas encore de boutique ?" 
               : "Aucune boutique disponible"}
           </h2>
           <p className="mt-2 text-gray-600">
-            {hasRole(UserRole.SUPERADMIN, UserRole.ADMIN)
+            {hasRole(GlobalRole.SUPERADMIN, GlobalRole.ADMIN)
               ? "Crée ta première boutique pour commencer à vendre tes produits !"
               : "Les boutiques seront bientôt disponibles. Revenez plus tard !"}
           </p>
-          {hasRole(UserRole.SUPERADMIN, UserRole.ADMIN) && (
+          {hasRole(GlobalRole.SUPERADMIN, GlobalRole.ADMIN) && (
             <Link
               to="/create-shop"
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-nolt-orange px-6 py-3 font-semibold text-white transition-all hover:bg-orange-600"

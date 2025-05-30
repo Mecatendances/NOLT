@@ -1,8 +1,9 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToMany, OneToMany } from 'typeorm';
-import { ProductEntity } from '../../dolibarr/entities/product.entity';
+import { ProductEntity } from '../../catalog/entities/product.entity';
 import { UserEntity } from '../../users/entities/user.entity';
 import { OrderEntity } from '../../orders/order.entity';
 import { CampaignEntity } from '../../campaigns/campaign.entity';
+import { CategoryEntity } from '../../catalog/entities/category.entity';
 
 @Entity('shops')
 export class Shop {
@@ -35,4 +36,7 @@ export class Shop {
 
   @OneToMany(() => CampaignEntity, campaign => campaign.shop)
   campaigns: CampaignEntity[];
+
+  @OneToMany(() => CategoryEntity, category => category.shop)
+  categories: CategoryEntity[];
 } 

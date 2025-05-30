@@ -1,10 +1,10 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { UserRole } from '../types/userRole';
+import { GlobalRole } from '../types/userRole';
 
 interface RequireAuthProps {
   children: JSX.Element;
-  allowedRoles?: UserRole[];
+  allowedRoles?: GlobalRole[];
   requireAdmin?: boolean; // Compat rétro
 }
 
@@ -23,7 +23,7 @@ export function RequireAuth({ children, allowedRoles, requireAdmin = false }: Re
   }
 
   // Gestion requireAdmin pour compatibilité
-  if (requireAdmin && !hasRole(UserRole.SUPERADMIN, UserRole.ADMIN)) {
+  if (requireAdmin && !hasRole(GlobalRole.SUPERADMIN, GlobalRole.ADMIN)) {
     return <Navigate to="/" replace />;
   }
 

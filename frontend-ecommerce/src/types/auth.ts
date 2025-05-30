@@ -1,10 +1,10 @@
-import { UserRole } from './userRole';
+import { GlobalRole } from './userRole';
 
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
+  role: GlobalRole;
   licenseeShops?: string[];
   isAdmin?: boolean;
   phone?: string;

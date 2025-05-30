@@ -9,7 +9,7 @@ import {
   LucideIcon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { UserRole } from '../types/userRole';
+import { GlobalRole } from '../types/userRole';
 
 // Définir un type pour les éléments de navigation
 interface NavItem {
@@ -52,6 +52,12 @@ export function AdminLayout() {
       action: () => navigate('/admin/shops')
     },
     {
+      name: 'Utilisateurs',
+      path: '/admin/users',
+      icon: LayoutDashboard,
+      action: () => navigate('/admin/users')
+    },
+    {
       name: 'Campagnes',
       path: '/admin/campaigns',
       icon: ClipboardList
@@ -76,7 +82,7 @@ export function AdminLayout() {
   // Sélectionner les options de navigation en fonction du rôle
   const navigation: NavItem[] = [
     ...baseNavigation,
-    ...(hasRole(UserRole.SUPERADMIN) ? superAdminNavigation : adminNavigation)
+    ...(hasRole(GlobalRole.SUPERADMIN) ? superAdminNavigation : adminNavigation)
   ];
 
   const isActive = (path: string, exact = false) => {

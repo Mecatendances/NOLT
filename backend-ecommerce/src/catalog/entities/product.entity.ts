@@ -1,5 +1,8 @@
-import { Entity, Column, OneToMany, PrimaryColumn } from 'typeorm';
+import { Entity, Column, OneToMany, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { ProductCategoryEntity } from './product-category.entity';
+import { ProductImage } from '../../products/entities/product-image.entity';
+import { Shop } from '../../shops/entities/shop.entity';
+import { ShopProductMetadataEntity } from '../../shop-product-metadata/entities/shop-product-metadata.entity';
 
 @Entity('products')
 export class ProductEntity {
@@ -21,13 +24,13 @@ export class ProductEntity {
   @Column({ name: 'tva_tx', type: 'decimal', precision: 5, scale: 2 })
   tvaTx: number;
 
-  @Column({ name: 'stock_reel', type: 'int' })
+  @Column({ name: 'stock_reel', type: 'int', nullable: true })
   stockReel: number;
 
-  @Column({ name: 'stock_virtuel', type: 'int' })
+  @Column({ name: 'stock_virtuel', type: 'int', nullable: true })
   stockVirtuel: number;
 
-  @Column({ name: 'status', type: 'int' })
+  @Column({ name: 'status', type: 'int', nullable: true })
   status: number;
 
   @Column({ name: 'ref', nullable: true })
@@ -36,13 +39,13 @@ export class ProductEntity {
   @Column({ name: 'barcode', nullable: true })
   barcode: string;
 
-  @Column({ name: 'fk_product_type', type: 'int' })
+  @Column({ name: 'fk_product_type', type: 'int', nullable: true })
   fkProductType: number;
 
-  @Column({ name: 'datec', type: 'timestamp' })
+  @Column({ name: 'datec', type: 'timestamp', nullable: true })
   datec: Date;
 
-  @Column({ name: 'tms', type: 'timestamp' })
+  @Column({ name: 'tms', type: 'timestamp', nullable: true })
   tms: Date;
 
   @Column({ name: 'import_key', nullable: true })
@@ -54,7 +57,7 @@ export class ProductEntity {
   @Column({ name: 'duration', nullable: true })
   duration: string;
 
-  @Column({ name: 'fk_user_author', type: 'int' })
+  @Column({ name: 'fk_user_author', type: 'int', nullable: true })
   fkUserAuthor: number;
 
   @Column({ name: 'fk_user_modif', type: 'int', nullable: true })
@@ -113,6 +116,29 @@ export class ProductEntity {
 
   @Column({ name: 'fk_bank', type: 'int', nullable: true })
   fkBank: number;
+
+  // Champs fusionnés pour compatibilité backend
+  @Column({ name: 'web_label', nullable: true })
+  webLabel?: string;
+
+  @Column({ type: 'integer', nullable: true })
+  stock?: number;
+
+  @Column({ name: 'category_id', type: 'integer', nullable: true })
+  categoryId?: number;
+
+  @Column({ type: 'uuid', name: 'shop_id', nullable: true })
+  shopId?: string;
+
+  @ManyToOne(() => Shop, shop => shop.products, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'shop_id' })
+  shop: Shop;
+
+  @OneToMany(() => ProductImage, image => image.product, { cascade: true })
+  images: ProductImage[];
+
+  @OneToMany(() => ShopProductMetadataEntity, metadata => metadata.product)
+  metadataEntries: ShopProductMetadataEntity[];
 
   @OneToMany(() => ProductCategoryEntity, productCategory => productCategory.product)
   categories: ProductCategoryEntity[];

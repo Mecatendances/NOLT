@@ -5,15 +5,18 @@ import { Store, ArrowLeft, Package, Euro } from 'lucide-react';
 import { shopApi } from '../../services/api';
 import { ProductList } from '../../components/ProductList';
 import type { Shop } from '../../types/shop';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function ShopDetails() {
   const { id } = useParams<{ id: string }>();
   
   const { data: shop, isLoading, error } = useQuery<Shop>({
     queryKey: ['shop', id],
-    queryFn: () => shopApi.getShop(Number(id)),
+    queryFn: () => shopApi.getShop(id),
     enabled: !!id
   });
+
+  const { user, hasShopRole } = useAuth();
 
   if (isLoading) {
     return (
@@ -90,6 +93,12 @@ export function ShopDetails() {
         <h2 className="mb-6 font-thunder text-2xl text-nolt-black">Produits de la boutique</h2>
         <ProductList products={shop.products} onProductSelect={() => {}} />
       </div>
+
+      {hasShopRole && hasShopRole(shop.id, 'SHOP_ADMIN') && (
+        <Link to={`/shops/${shop.id}/admin`} className="btn btn-primary">
+          Accéder à l'administration de la boutique
+        </Link>
+      )}
     </div>
   );
 }

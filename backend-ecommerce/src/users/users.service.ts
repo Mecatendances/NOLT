@@ -2,7 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap, UnauthorizedException } fro
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './entities/user.entity';
-import { UserRole } from './user-role.enum';
+import { GlobalRole } from './user-role.enum';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -29,7 +29,7 @@ export class UsersService implements OnApplicationBootstrap {
     const superAdmin = this.userRepository.create({
       email: superAdminEmail,
       password: hashedPassword,
-      role: UserRole.SUPERADMIN,
+      role: GlobalRole.SUPERADMIN,
     });
     await this.userRepository.save(superAdmin);
     this.logger.log(`Compte superadmin créé (${superAdminEmail})`);
@@ -68,5 +68,9 @@ export class UsersService implements OnApplicationBootstrap {
     if (Object.keys(validPatch).length > 0) {
         await this.userRepository.update({ id }, validPatch);
     }
+  }
+
+  async findAll() {
+    return this.userRepository.find();
   }
 } 

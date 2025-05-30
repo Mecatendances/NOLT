@@ -340,3 +340,10 @@ export const adminApi = {
     return response.data;
   },
 };
+
+export const userShopRoleApi = {
+  getAllUserShopRoles: async () => {
+    const response = await api.get('/user-shop-roles');
+    return response.data;
+  },
+};

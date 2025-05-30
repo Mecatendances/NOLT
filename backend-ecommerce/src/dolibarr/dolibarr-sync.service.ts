@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { DolibarrService } from './dolibarr.service';
-import { CategoryEntity } from './entities/category.entity';
-import { ProductEntity } from './entities/product.entity';
+import { CategoryEntity } from '../catalog/entities/category.entity';
+import { ProductEntity } from '../catalog/entities/product.entity';
+import { Shop } from '../shops/entities/shop.entity';
 
 export interface SyncResult {
   categories: number;
@@ -18,7 +19,9 @@ export class DolibarrSyncService {
     private readonly categoryRepository: Repository<CategoryEntity>,
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
-    private dataSource: DataSource
+    private dataSource: DataSource,
+    @InjectRepository(Shop)
+    private readonly shopRepository: Repository<Shop>
   ) {}
 
   /**
@@ -28,180 +31,135 @@ export class DolibarrSyncService {
    * 3. Récupère tous les produits puis effectue un upsert.
    * @returns nombre total d'éléments synchronisés
    */
-  async sync(categoryId?: string): Promise<SyncResult | { message: string }> {
+  async sync(shopId: string): Promise<SyncResult | { message: string }> {
     try {
-      // D'abord, synchroniser les associations produit-catégorie
-      await this.syncProductCategories();
-      
-      let dolibarrProducts: any[] = [];
-      let catEntities: CategoryEntity[] = [];
-      const productFirstCategory = new Map<string, string>();
+      // Récupère la boutique
+      const shop = await this.shopRepository.findOne({ where: { id: shopId } });
+      if (!shop) throw new Error('Boutique non trouvée');
+      const dolibarrCategoryId = shop.dolibarrCategoryId;
 
-      if (categoryId) {
-        // --- Approche simplifiée pour FC Chalon ---
-        console.log(`🔄 Synchronisation catégorie ${categoryId} et ses sous-catégories`);
-        
-        try {
-          // 1. Récupérer toutes les sous-catégories via noltapi (fonctionne bien)
-          const categoriesFilles = await this.dolibarrService.getCategoriesFilles(categoryId);
-          console.log('categoriesFilles reçu:', typeof categoriesFilles, 
-            Array.isArray(categoriesFilles) ? categoriesFilles.length : 'non-array');
-          
-          let subCategories: any[] = [];
-          
-          // Normaliser la réponse en tableau
-          if (Array.isArray(categoriesFilles)) {
-            subCategories = categoriesFilles;
-          } else if (categoriesFilles && typeof categoriesFilles === 'object') {
-            console.log('Conversion objet → tableau', Object.keys(categoriesFilles).length);
-            subCategories = Object.values(categoriesFilles);
-          }
-          
-          console.log(`✅ ${subCategories.length} sous-catégories récupérées`);
+      // Récupérer la racine et les sous-catégories
+      const racine = {
+        id: dolibarrCategoryId,
+        label: shop.name,
+        description: shop.description,
+      };
 
-          // 2. Ajouter la catégorie parente à la liste
-          const allCatIds: string[] = [categoryId, ...subCategories.map((c: any) => String(c.id))];
-          console.log('allCatIds:', allCatIds);
-          
-          // 3. Créer et sauvegarder les entités catégories
-          const parentEntity = new CategoryEntity();
-          parentEntity.id = categoryId;
-          parentEntity.label = 'FC Chalon'; // On pourrait récupérer le label exact, mais pas critique
-          
-          catEntities = [
-            parentEntity,
-            ...subCategories.map((c: any) => {
-              const entity = new CategoryEntity();
-              entity.id = String(c.id);
-              entity.label = c.label;
-              entity.fkParent = categoryId;
-              entity.parent = parentEntity;
-              return entity;
-            })
-          ];
-          
-          try {
-            // Sauvegarder les catégories
-            await this.categoryRepository.save(catEntities);
-            console.log(`✅ ${catEntities.length} catégories sauvegardées en base`);
-          } catch (dbError) {
-            console.error('❌ Erreur sauvegarde catégories:', dbError);
-            throw dbError;
-          }
-          
-          try {
-            // 4. Récupérer directement les produits pour chaque catégorie via l'endpoint qui fonctionne
-            const productsPromises = allCatIds.map(id => 
-              this.dolibarrService.getProducts(Number(id), 0, true)
-              .catch(error => {
-                console.log(`⚠️ Catégorie ${id} sans produits (${error.message})`);
-                return []; // Retourner un tableau vide en cas d'erreur
-              })
-            );
-            
-            const productsResults = await Promise.all(productsPromises);
-            console.log('productsResults:', productsResults.map(a => a.length));
-            
-            // 5. Mapper les produits avec leur première catégorie rencontrée
-            productsResults.forEach((products, index) => {
-              const catId = allCatIds[index];
-              products.forEach(prod => {
-                const productId = String(prod.id);
-                if (!productFirstCategory.has(productId)) {
-                  productFirstCategory.set(productId, catId);
-                }
-              });
-            });
-            
-            // 6. Fusionner et dédupliquer les produits
-            const uniqueProducts = new Map<string, any>();
-            productsResults.flat().forEach(product => {
-              uniqueProducts.set(String(product.id), product);
-            });
-            
-            dolibarrProducts = Array.from(uniqueProducts.values());
-            console.log(`✅ ${dolibarrProducts.length} produits uniques récupérés`);
-          } catch (productsError) {
-            console.error('❌ Erreur récupération produits:', productsError);
-            throw productsError;
-          }
-        } catch (categoriesError) {
-          console.error('❌ Erreur récupération sous-catégories:', categoriesError);
-          throw categoriesError;
+      let categoriesFilles = await this.dolibarrService.getCategoriesFilles(String(dolibarrCategoryId));
+      if (!Array.isArray(categoriesFilles)) {
+        if (categoriesFilles && typeof categoriesFilles === 'object') {
+          categoriesFilles = Object.values(categoriesFilles);
+        } else {
+          categoriesFilles = [];
         }
-      } else {
-        // --- Étape 1 : catégories (toutes)
-        const dolibarrCategories = await this.dolibarrService.getCategories();
+      }
+      const allCategories = [racine, ...categoriesFilles];
 
-        catEntities = dolibarrCategories.map((cat: any) => {
-          const entity = new CategoryEntity();
-          entity.id = String(cat.id);
-          entity.label = cat.label;
-          entity.description = cat.description;
-          entity.fkParent = cat.fk_parent ? String(cat.fk_parent) : undefined;
-          return entity;
+      console.log('=== DEBUG shopId utilisé pour l\'import :', shopId);
+      allCategories.forEach((cat: any) => {
+        console.log('Catégorie à importer :', {
+          id: cat.id,
+          label: cat.label,
+          description: cat.description,
+          shopId: shopId
         });
+      });
 
-        // Upsert des catégories (save gère insert + update)
-        await this.categoryRepository.save(catEntities);
-
-        // Mise à jour des relations parent/enfant
-        for (const entity of catEntities) {
-          if (entity.fkParent) {
-            entity.parent = await this.categoryRepository.findOne({ where: { id: entity.fkParent } });
-          } else {
-            entity.parent = null;
-          }
+      // 1. Upsert des catégories (update si dolibarrId existe, sinon insert)
+      for (const cat of allCategories) {
+        let entity = await this.categoryRepository.findOne({ where: { dolibarrId: Number(cat.id) } });
+        if (!entity) {
+          entity = new CategoryEntity();
+          entity.dolibarrId = Number(cat.id);
+          entity.shopId = shopId;
         }
-        await this.categoryRepository.save(catEntities);
-
-        // Tous les produits
-        dolibarrProducts = await this.dolibarrService.getProducts(undefined, 0, true);
+        entity.label = cat.label;
+        entity.description = cat.description;
+        entity.fkParent = null; // On mettra à jour après
+        await this.categoryRepository.save(entity);
       }
 
-      try {
-        const prodEntities: ProductEntity[] = [];
+      // 2. Mise à jour de la parentalité (toutes les catégories sauf la racine pointent vers la racine)
+      const racineEntity = await this.categoryRepository.findOne({ where: { dolibarrId: Number(dolibarrCategoryId) } });
+      if (racineEntity) {
+        for (const cat of allCategories) {
+          if (Number(cat.id) !== racineEntity.dolibarrId) {
+            const child = await this.categoryRepository.findOne({ where: { dolibarrId: Number(cat.id) } });
+            if (child) {
+              child.fkParent = racineEntity.id;
+              await this.categoryRepository.save(child);
+            }
+          }
+        }
+      }
 
-        for (const prod of dolibarrProducts) {
-          const entity = new ProductEntity();
-          entity.id = Number(prod.id);
+      // 3. Synchronisation des produits par catégorie
+      let totalProducts = 0;
+      const productCategoryAssociations = [];
+      for (const cat of allCategories) {
+        if (Number(cat.id) === Number(dolibarrCategoryId)) continue; // ignorer la racine
+        const catId = Number(cat.id);
+        console.log(`📡 Récupération des produits pour la catégorie Dolibarr ${catId}`);
+        let products = [];
+        try {
+          products = await this.dolibarrService.getCategoryProducts(catId); // à implémenter si besoin
+        } catch (err) {
+          console.error(`❌ Erreur récupération produits catégorie ${catId}:`, err.message);
+          continue;
+        }
+        console.log(`  → ${products.length} produits trouvés pour la catégorie ${catId}`);
+        for (const prod of products) {
+          let entity = await this.productRepository.findOne({ where: { id: Number(prod.id) } });
+          if (!entity) {
+            entity = new ProductEntity();
+            entity.id = Number(prod.id);
+          }
           entity.ref = prod.ref;
           entity.label = prod.label;
-
-          const priceHt = typeof prod.price_ht === 'number' ? prod.price_ht : parseFloat(prod.price);
-          const priceTtc = typeof prod.price_ttc_number === 'number' ? prod.price_ttc_number : parseFloat(prod.price_ttc);
-          const stockVal = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock_reel || '0', 10);
-
-          entity.priceHt = Number.isFinite(priceHt) ? priceHt : 0;
-          entity.priceTtc = Number.isFinite(priceTtc) ? priceTtc : 0;
-          entity.stock = Number.isFinite(stockVal) ? stockVal : 0;
+          entity.priceHt = prod.price_ht ? Number(prod.price_ht) : 0;
+          entity.priceTtc = prod.price_ttc ? Number(prod.price_ttc) : 0;
+          entity.stock = prod.stock ? Number(prod.stock) : 0;
           entity.description = prod.description;
-
-          let mainCatId: string | undefined;
-          if (prod.category) {
-            mainCatId = String(prod.category);
-          } else {
-            mainCatId = productFirstCategory.get(String(prod.id));
-          }
-
-          if (mainCatId) {
-            entity.categoryId = Number(mainCatId);
-          }
-
-          prodEntities.push(entity);
+          entity.tvaTx = prod.tva_tx ? Number(prod.tva_tx) : 0;
+          await this.productRepository.save(entity);
+          productCategoryAssociations.push({ productId: entity.id, categoryId: catId });
+          totalProducts++;
         }
-
-        await this.productRepository.save(prodEntities);
-        console.log(`✅ ${prodEntities.length} produits sauvegardés en base`);
-
-        return {
-          categories: catEntities.length,
-          products: prodEntities.length,
-        };
-      } catch (productsError) {
-        console.error('❌ Erreur traitement produits:', productsError);
-        throw productsError;
       }
+      console.log(`✅ ${totalProducts} produits importés/actualisés depuis Dolibarr.`);
+      // Table pivot : product_categories
+      if (productCategoryAssociations.length > 0) {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+          await queryRunner.query('TRUNCATE TABLE product_categories');
+          for (const assoc of productCategoryAssociations) {
+            // Chercher l'id auto-incrémenté de la catégorie à partir du dolibarr_id
+            const category = await this.categoryRepository.findOne({ where: { dolibarrId: assoc.categoryId } });
+            if (category) {
+              await queryRunner.query(
+                `INSERT INTO product_categories (product_id, category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                [assoc.productId, category.id]
+              );
+            } else {
+              console.warn(`Catégorie Dolibarr ${assoc.categoryId} non trouvée en base, association ignorée`);
+            }
+          }
+          await queryRunner.commitTransaction();
+          console.log(`✅ ${productCategoryAssociations.length} associations produit-catégorie insérées.`);
+        } catch (err) {
+          await queryRunner.rollbackTransaction();
+          console.error('❌ Erreur lors de l\'insertion des associations produit-catégorie :', err);
+        } finally {
+          await queryRunner.release();
+        }
+      }
+
+      return {
+        categories: allCategories.length,
+        products: totalProducts,
+      };
     } catch (error) {
       console.error('❌ ERREUR GLOBALE SYNC:', error);
       return {
@@ -484,7 +442,7 @@ export class DolibarrSyncService {
           // Filtrer les associations valides (produit et catégorie existent en base)
           const validAssociations = productCategoryAssociations.filter(assoc => 
             existingProductIds.has(Number(assoc.productId)) &&
-            existingCategoryIds.has(String(assoc.categoryId))
+            existingCategoryIds.has(Number(assoc.categoryId))
           );
           
           console.log(`📥 Insertion de ${validAssociations.length} associations produit-catégorie valides (${productCategoryAssociations.length - validAssociations.length} ignorées)`);
@@ -548,7 +506,7 @@ export class DolibarrSyncService {
           console.warn(`⚠️ Produit ${assoc.productId} manquant – association ignorée`);
           continue;
         }
-        if (!categoryIds.has(assoc.categoryId)) {
+        if (!categoryIds.has(Number(assoc.categoryId))) {
           console.warn(`⚠️ Catégorie ${assoc.categoryId} manquante – association ignorée`);
           continue;
         }

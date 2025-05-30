@@ -4,9 +4,9 @@ import { Repository } from 'typeorm';
 import { OrderEntity } from './order.entity';
 import { OrderItemEntity } from './order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { ProductEntity } from '../dolibarr/entities/product.entity';
+import { ProductEntity } from '../catalog/entities/product.entity';
 import { UserEntity } from '../users/entities/user.entity';
-import { UserRole } from '../users/user-role.enum';
+import { GlobalRole } from '../users/user-role.enum';
 
 @Injectable()
 export class OrdersService {
@@ -50,7 +50,7 @@ export class OrdersService {
         user = this.userRepository.create({
           email: dto.customerEmail,
           password: 'tempPassword@123',
-          role: UserRole.CLIENT,
+          role: GlobalRole.CLIENT,
           phone: dto.customerPhone,
           address: dto.address,
           zipCode: dto.zipCode,

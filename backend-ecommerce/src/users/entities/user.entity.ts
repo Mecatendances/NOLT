@@ -1,6 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { Shop } from '../../shops/entities/shop.entity';
 import { OrderEntity } from '../../orders/order.entity';
+import { GlobalRole } from '../user-role.enum';
+import { UserShopRoleEntity } from './user-shop-role.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -13,8 +15,12 @@ export class UserEntity {
   @Column()
   password: string;
 
-  @Column()
-  role: string;
+  @Column({
+    type: 'enum',
+    enum: GlobalRole,
+    default: GlobalRole.CLIENT
+  })
+  role: GlobalRole;
 
   @Column({ nullable: true })
   name: string;
@@ -48,6 +54,9 @@ export class UserEntity {
 
   @OneToMany(() => OrderEntity, order => order.user)
   orders: OrderEntity[];
+
+  @OneToMany(() => UserShopRoleEntity, userShopRole => userShopRole.user)
+  shopRoles: UserShopRoleEntity[];
 
   // Alias pour la relation ManyToMany avec les boutiques
   get licenseeShops(): Shop[] {

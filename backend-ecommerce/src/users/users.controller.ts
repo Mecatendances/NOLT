@@ -1,6 +1,8 @@
-import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Request, Patch, Param } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { GlobalRole } from './user-role.enum';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -17,6 +19,19 @@ export class UsersController {
   @Put('me')
   async updateMe(@Request() req, @Body() body: any) {
     await this.users.updateUser(req.user.sub, body);
+    return { success: true };
+  }
+
+  @Get()
+  @Roles(GlobalRole.SUPERADMIN)
+  async findAll() {
+    return this.users.findAll();
+  }
+
+  @Patch(':id')
+  @Roles(GlobalRole.SUPERADMIN)
+  async updateUser(@Param('id') id: string, @Body() body: any) {
+    await this.users.updateUser(id, body);
     return { success: true };
   }
 } 

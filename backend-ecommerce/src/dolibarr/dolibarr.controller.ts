@@ -132,4 +132,10 @@ export class DolibarrController {
   async updateWebLabel(@Param('id') id: string, @Body('webLabel') webLabel: string) {
     return this.dolibarrService.updateWebLabel(id, webLabel);
   }
+
+  @Post('sync/categories-products')
+  async syncCategoriesAndProducts(@Query('shopId') shopId: string) {
+    console.log('=== DEBUG shopId reçu dans le contrôleur :', shopId);
+    return await this.dolibarrSyncService.sync(shopId);
+  }
 }

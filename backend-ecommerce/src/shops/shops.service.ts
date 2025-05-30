@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Shop } from './entities/shop.entity';
-import { ProductEntity } from '../dolibarr/entities/product.entity';
+import { ProductEntity } from '../catalog/entities/product.entity';
 import { ProductImageService } from '../products/services/product-image.service';
 import { CatalogService } from '../catalog/catalog.service';
 
@@ -28,7 +28,11 @@ export class ShopsService {
     }
 
     if (shop.dolibarrCategoryId) {
-      const products = await this.catalogService.getProducts(String(shop.dolibarrCategoryId), shop.id);
+      const category = await this.catalogService.findCategoryByDolibarrId(shop.dolibarrCategoryId);
+      let products = [];
+      if (category) {
+        products = await this.catalogService.getProducts(String(category.id), shop.id);
+      }
       (shop as any).products = products;
     } else {
       (shop as any).products = [];
