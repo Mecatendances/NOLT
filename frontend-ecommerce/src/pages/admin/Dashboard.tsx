@@ -42,6 +42,7 @@ export function Dashboard() {
   const quickActions = [
     { name: 'Nouvelle boutique', icon: Store, href: '/admin/shops/new', color: 'bg-nolt-orange' },
     { name: 'Nouvelle campagne', icon: Megaphone, href: '/admin/campaigns/new', color: 'bg-nolt-yellow' },
+    { name: 'Paramètres emails', icon: Megaphone, href: '/admin/email-settings', color: 'bg-blue-500' },
   ];
 
   const recentItems = [

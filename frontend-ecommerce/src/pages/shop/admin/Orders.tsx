@@ -39,7 +39,7 @@ export default function ShopAdminOrders() {
   const { data, isLoading, error } = useQuery<Order[]>({
     queryKey: ['shop-orders', id],
     queryFn: async () => {
-      const res = await fetch(`/api/shops/${id}/orders`);
+      const res = await fetch(`/api/orders/shop/${id}`);
       if (!res.ok) throw new Error('Erreur réseau');
       return res.json();
     },

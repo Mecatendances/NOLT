@@ -85,4 +85,12 @@ export class OrdersService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  async findByShop(shopId: string): Promise<OrderEntity[]> {
+    return this.orderRepository.find({
+      where: { shop: { id: shopId } },
+      order: { createdAt: 'DESC' },
+      relations: ['user', 'items', 'shop'],
+    });
+  }
 } 

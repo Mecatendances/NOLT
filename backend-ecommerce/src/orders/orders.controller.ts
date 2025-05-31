@@ -39,4 +39,9 @@ export class OrdersController {
   async myOrders(@Request() req) {
     return this.ordersService.findByUser(req.user.sub);
   }
+
+  @Get('shop/:shopId')
+  async getOrdersByShop(@Param('shopId') shopId: string) {
+    return this.ordersService.findByShop(shopId);
+  }
 } 

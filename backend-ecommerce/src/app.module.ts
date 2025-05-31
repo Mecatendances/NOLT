@@ -16,6 +16,13 @@ import { UsersModule } from './users/users.module';
 import { ShopsModule } from './shops/shops.module';
 import { ProductsModule } from './products/products.module';
 import { ShopProductMetadataModule } from './shop-product-metadata/shop-product-metadata.module';
+import { EmailSettings } from './mailer/email-settings.entity';
+import { EmailSettingsController } from './mailer/email-settings.controller';
+import { IntegrationSettings } from './mailer/integration-settings.entity';
+import { IntegrationSettingsController } from './mailer/integration-settings.controller';
+import { BrandingSettings } from './mailer/branding-settings.entity';
+import { BrandingSettingsController } from './mailer/branding-settings.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
@@ -34,8 +41,18 @@ import { ShopProductMetadataModule } from './shop-product-metadata/shop-product-
     ShopsModule,
     ProductsModule,
     ShopProductMetadataModule,
+    TypeOrmModule.forFeature([
+      EmailSettings,
+      IntegrationSettings,
+      BrandingSettings,
+    ]),
   ],
-  controllers: [AppController],
+  controllers: [
+    AppController,
+    EmailSettingsController,
+    IntegrationSettingsController,
+    BrandingSettingsController,
+  ],
   providers: [AppService],
 })
 export class AppModule implements NestModule {

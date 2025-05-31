@@ -6,7 +6,9 @@ import {
   ClipboardList,
   ChevronRight,
   LogOut,
-  LucideIcon
+  LucideIcon,
+  Settings,
+  Palette
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { GlobalRole } from '../types/userRole';
@@ -79,10 +81,33 @@ export function AdminLayout() {
     }
   ];
   
+  // Section paramètres pour le SUPERADMIN
+  const settingsNavigation: NavItem[] = hasRole(GlobalRole.SUPERADMIN) ? [
+    {
+      name: 'Paramètres',
+      path: '/admin/email-settings',
+      icon: Settings,
+      action: () => navigate('/admin/email-settings')
+    },
+    {
+      name: 'Intégrations',
+      path: '/admin/integrations',
+      icon: Settings,
+      action: () => navigate('/admin/integrations')
+    },
+    {
+      name: 'Personnalisation',
+      path: '/admin/branding',
+      icon: Palette,
+      action: () => navigate('/admin/branding')
+    }
+  ] : [];
+  
   // Sélectionner les options de navigation en fonction du rôle
   const navigation: NavItem[] = [
     ...baseNavigation,
-    ...(hasRole(GlobalRole.SUPERADMIN) ? superAdminNavigation : adminNavigation)
+    ...(hasRole(GlobalRole.SUPERADMIN) ? superAdminNavigation : adminNavigation),
+    ...settingsNavigation
   ];
 
   const isActive = (path: string, exact = false) => {

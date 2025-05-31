@@ -8,6 +8,7 @@ import { TopBar } from './components/TopBar';
 
 // Layouts
 import { AdminLayout } from './layouts/AdminLayout';
+import { ShopAdminLayout } from './layouts/ShopAdminLayout';
 
 // Pages
 import { HomePage } from './pages/HomePage';
@@ -36,6 +37,13 @@ import ShopAdminDashboard from './pages/shop/admin/Dashboard';
 import ShopAdminOrders from './pages/shop/admin/Orders';
 import ShopAdminCampaigns from './pages/shop/admin/Campaigns';
 import ShopAdminUsers from './pages/shop/admin/Users';
+import Products from './pages/shop/admin/Products';
+import Register from './pages/Register';
+import EmailSettingsAdmin from './pages/admin/EmailSettings';
+import IntegrationsAdmin from './pages/admin/Integrations';
+import ShopIntegrations from './pages/shop/admin/Integrations';
+import ShopBrandingSettings from './pages/shop/admin/ShopBrandingSettings';
+import BrandingSettings from './pages/admin/BrandingSettings';
 
 const queryClient = new QueryClient();
 
@@ -73,24 +81,29 @@ function App() {
                 <Route path="users" element={<AdminUsersList />} />
                 <Route path="shops/:shopId" element={<AdminShopDetails />} />
                 <Route path="shops/:shopId/roles" element={<ShopRolesPage />} />
+                <Route path="email-settings" element={<EmailSettingsAdmin />} />
+                <Route path="integrations" element={<IntegrationsAdmin />} />
+                <Route path="branding" element={<BrandingSettings />} />
               </Route>
 
               {/* Routes de gestion des boutiques */}
-              <Route path="/shops" element={<RequireAuth><ShopsList /></RequireAuth>} />
-              <Route path="/shops/:id" element={<RequireAuth><ShopDetails /></RequireAuth>}>
-                <Route index element={<div>Bienvenue sur la boutique ! (à personnaliser)</div>} />
-                <Route path="admin" element={<RequireAuth><ShopAdminDashboard /></RequireAuth>}>
-                  <Route index element={<div>Bienvenue sur le dashboard de la boutique ! (à personnaliser)</div>} />
-                  <Route path="orders" element={<ShopAdminOrders />} />
-                  <Route path="campaigns" element={<ShopAdminCampaigns />} />
-                  <Route path="users" element={<ShopAdminUsers />} />
-                </Route>
+              <Route path="/shops/:id/admin" element={<RequireAuth><ShopAdminLayout /></RequireAuth>}>
+                <Route index element={<ShopAdminDashboard />} />
+                <Route path="orders" element={<ShopAdminOrders />} />
+                <Route path="campaigns" element={<ShopAdminCampaigns />} />
+                <Route path="users" element={<ShopAdminUsers />} />
+                <Route path="products" element={<Products />} />
+                <Route path="integrations" element={<ShopIntegrations />} />
+                <Route path="branding" element={<ShopBrandingSettings />} />
               </Route>
+              <Route path="/shops/:id" element={<RequireAuth><ShopDetails /></RequireAuth>} />
               <Route path="/create-shop" element={<RequireAuth requireAdmin={true}><CreateShop /></RequireAuth>} />
 
               <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
 
               <Route path="/my-shops" element={<MyAdminShops />} />
+
+              <Route path="/register" element={<Register />} />
             </Routes>
           </CartProvider>
         </AuthProvider>

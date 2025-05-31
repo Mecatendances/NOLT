@@ -306,6 +306,26 @@ export const shopApi = {
       throw error;
     }
   },
+
+  // --- Gestion des utilisateurs locaux de boutique ---
+  getShopUsers: async (shopId: string) => {
+    const response = await api.get(`/shops/${shopId}/roles/users`);
+    return response.data;
+  },
+
+  assignShopRole: async (shopId: string, userId: string, role: string) => {
+    await api.post(`/shops/${shopId}/roles`, { userId, role });
+  },
+
+  removeShopUser: async (shopId: string, userId: string) => {
+    await api.delete(`/shops/${shopId}/roles/user/${userId}`);
+  },
+
+  // À adapter selon ton backend :
+  findOrCreateUserByEmail: async (email: string) => {
+    const res = await api.post('/users', { email });
+    return res.data;
+  },
 };
 
 export const userApi = {
@@ -338,6 +358,35 @@ export const adminApi = {
   getStats: async (): Promise<AdminStats> => {
     const response = await api.get('/admin/stats');
     return response.data;
+  },
+
+  // Branding settings
+  getBrandingSettings: (options?: { shopId?: string }) => {
+    const params = new URLSearchParams();
+    if (options?.shopId) {
+      params.append('shopId', options.shopId);
+    }
+    return axios.get(`/api/admin/branding?${params.toString()}`);
+  },
+
+  updateBrandingSettings: (settings: any, options?: { shopId?: string }) => {
+    const params = new URLSearchParams();
+    if (options?.shopId) {
+      params.append('shopId', options.shopId);
+    }
+    return axios.put(`/api/admin/branding?${params.toString()}`, settings);
+  },
+
+  uploadBrandingImage: (type: 'logo' | 'favicon' | 'coverImage', formData: FormData, options?: { shopId?: string }) => {
+    const params = new URLSearchParams();
+    if (options?.shopId) {
+      params.append('shopId', options.shopId);
+    }
+    return axios.post(`/api/admin/branding/upload/${type}?${params.toString()}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   },
 };
 

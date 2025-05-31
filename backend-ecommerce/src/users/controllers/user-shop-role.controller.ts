@@ -49,6 +49,13 @@ export class UserShopRoleController {
     await this.userShopRoleService.removeRole(userId, shopId);
     return { success: true };
   }
+
+  @Get('/users')
+  @Roles(GlobalRole.SUPERADMIN)
+  @ShopRoles(ShopRole.SHOP_ADMIN)
+  async getAllShopUsers(@Param('shopId') shopId: string) {
+    return this.userShopRoleService.getAllUsersForShop(shopId);
+  }
 }
 
 // Endpoint global pour le superadmin

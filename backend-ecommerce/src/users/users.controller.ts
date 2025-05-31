@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards, Request, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Request, Patch, Param, Post, Query } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -33,5 +33,15 @@ export class UsersController {
   async updateUser(@Param('id') id: string, @Body() body: any) {
     await this.users.updateUser(id, body);
     return { success: true };
+  }
+
+  @Post()
+  async createOrFindUser(@Body() body: { email: string, name?: string, password?: string, shopId?: string }) {
+    return this.users.createOrFindUser(body);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: { token: string, password: string }) {
+    return this.users.resetPasswordWithToken(body.token, body.password);
   }
 } 

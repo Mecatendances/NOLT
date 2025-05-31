@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { shopApi } from '../../../services/api';
-import { 
+import {
   Package,
   Store,
   Search,
@@ -31,7 +31,7 @@ export default function ShopAdminDashboard() {
     enabled: !!id
   });
 
-  const filteredProducts = products.filter(product => 
+  const filteredProducts = products.filter(product =>
     product.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.ref.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -42,7 +42,7 @@ export default function ShopAdminDashboard() {
     { name: 'Nouvelle campagne', icon: Megaphone, href: `/shops/${id}/admin/campaigns/new`, color: 'bg-nolt-yellow' },
   ];
 
-  // Items récents
+  // Items récents (adaptés à l'admin local)
   const recentItems = [
     {
       name: 'Commandes récentes',

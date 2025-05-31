@@ -3,6 +3,7 @@ import { Shop } from '../../shops/entities/shop.entity';
 import { OrderEntity } from '../../orders/order.entity';
 import { GlobalRole } from '../user-role.enum';
 import { UserShopRoleEntity } from './user-shop-role.entity';
+import { PasswordResetTokenEntity } from './password-reset-token.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -57,6 +58,9 @@ export class UserEntity {
 
   @OneToMany(() => UserShopRoleEntity, userShopRole => userShopRole.user)
   shopRoles: UserShopRoleEntity[];
+
+  @OneToMany(() => PasswordResetTokenEntity, token => token.user)
+  passwordResetTokens: PasswordResetTokenEntity[];
 
   // Alias pour la relation ManyToMany avec les boutiques
   get licenseeShops(): Shop[] {

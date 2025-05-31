@@ -69,4 +69,11 @@ export class UserShopRoleService {
   async getAllUserShopRoles(): Promise<UserShopRoleEntity[]> {
     return this.userShopRoleRepository.find({ relations: ['user', 'shop'] });
   }
+
+  async getAllUsersForShop(shopId: string): Promise<UserShopRoleEntity[]> {
+    return this.userShopRoleRepository.find({
+      where: { shopId },
+      relations: ['user']
+    });
+  }
 } 

@@ -38,9 +38,14 @@ export function TopBar() {
 
         <div className="relative">
           {!isAuthenticated ? (
-            <Link to="/login" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-montserrat text-white bg-nolt-orange rounded-lg hover:bg-nolt-yellow hover:text-nolt-black transition-colors">
-              Se connecter
-            </Link>
+            <>
+              <Link to="/login" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-montserrat text-white bg-nolt-orange rounded-lg hover:bg-nolt-yellow hover:text-nolt-black transition-colors">
+                Se connecter
+              </Link>
+              <Link to="/register" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-montserrat text-nolt-orange border border-nolt-orange rounded-lg hover:bg-nolt-yellow hover:text-nolt-black transition-colors ml-2">
+                Créer un compte
+              </Link>
+            </>
           ) : (
             <button onClick={() => setOpen(!open)} className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 transition-colors">
               <UserCircle className="h-5 w-5 text-nolt-orange" />
