@@ -257,7 +257,7 @@ export function Checkout() {
                 <div className="border-t pt-4">
                   <div className="flex justify-between text-lg font-bold">
                     <span className="font-montserrat">Total</span>
-                    <span className="text-nolt-yellow font-thunder italic text-xl">{total.toFixed(2)}€</span>
+                    <span className="font-thunder italic text-xl" style={{color: 'var(--brand-secondary, #FFD600)'}}>{total.toFixed(2)}€</span>
                   </div>
                 </div>
               </div>
@@ -265,24 +265,24 @@ export function Checkout() {
 
             {/* Avantages */}
             <div className="rounded-xl bg-gray-50 p-6 border border-gray-200">
-              <h2 className="font-thunder text-2xl mb-4 italic uppercase text-nolt-orange">Nos garanties</h2>
+              <h2 className="font-thunder text-2xl mb-4 italic uppercase" style={{color: 'var(--brand-primary, #0E214A)'}}>Nos garanties</h2>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <Truck className="h-6 w-6 text-nolt-yellow" />
+                  <Truck className="h-6 w-6" style={{color: 'var(--brand-secondary, #FFD600)'}} />
                   <div>
                     <h3 className="font-semibold font-montserrat">Livraison rapide</h3>
                     <p className="text-sm text-gray-600 font-montserrat">Livraison en 2-3 jours ouvrés</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Shield className="h-6 w-6 text-nolt-yellow" />
+                  <Shield className="h-6 w-6" style={{color: 'var(--brand-secondary, #FFD600)'}} />
                   <div>
                     <h3 className="font-semibold font-montserrat">Paiement sécurisé</h3>
                     <p className="text-sm text-gray-600 font-montserrat">Vos données sont protégées</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CreditCard className="h-6 w-6 text-nolt-yellow" />
+                  <CreditCard className="h-6 w-6" style={{color: 'var(--brand-secondary, #FFD600)'}} />
                   <div>
                     <h3 className="font-semibold font-montserrat">Satisfait ou remboursé</h3>
                     <p className="text-sm text-gray-600 font-montserrat">Retour gratuit sous 30 jours</p>

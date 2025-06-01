@@ -62,8 +62,15 @@ export class BrandingSettingsController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
-      destination: (req, file, cb) => {
-        const shopSlug = req.body.shopSlug || 'global';
+      destination: async (req, file, cb) => {
+        const shopId = req.body.shopId;
+        let shopSlug = 'global';
+        if (shopId) {
+          // Récupérer le slug de la boutique en base
+          const shopRepo = req.app.get('typeorm').getRepository('Shop');
+          const shop = await shopRepo.findOne({ where: { id: shopId } });
+          if (shop && shop.slug) shopSlug = shop.slug;
+        }
         const folder = path.join('uploads', shopSlug);
         if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
         cb(null, folder);

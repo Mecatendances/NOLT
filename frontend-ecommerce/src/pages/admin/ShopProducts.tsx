@@ -263,7 +263,8 @@ export function ShopProducts() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => { saveWebLabel(product.id, webLabels[product.id] || ''); }}
-                            className="rounded-lg bg-nolt-orange p-2 text-white hover:bg-orange-600"
+                            className="rounded-lg p-2 text-white hover:bg-orange-600"
+                            style={{background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}}
                           >
                             <Save className="h-5 w-5" />
                           </button>
@@ -297,9 +298,9 @@ export function ShopProducts() {
 
                               return (
                                 <>
-                                  <h3 className="font-thunder text-lg text-nolt-black">
-                                    <span className={showOriginalLabelInParentheses ? "text-nolt-orange" : ""}>
-                                      {displayLabel || originalDolibarrLabel} {/* Fallback au cas où displayLabel serait vide */}
+                                  <h3 className="font-thunder text-lg" style={{color: 'var(--brand-primary, #222)'}}>
+                                    <span style={{color: showOriginalLabelInParentheses ? 'var(--brand-secondary, #FFD600)' : 'inherit'}}>
+                                      {displayLabel || originalDolibarrLabel}
                                     </span>
                                   </h3>
                                   {showOriginalLabelInParentheses && (

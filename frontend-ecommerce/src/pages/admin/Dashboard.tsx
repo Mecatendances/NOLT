@@ -40,9 +40,9 @@ export function Dashboard() {
   );
 
   const quickActions = [
-    { name: 'Nouvelle boutique', icon: Store, href: '/admin/shops/new', color: 'bg-nolt-orange' },
-    { name: 'Nouvelle campagne', icon: Megaphone, href: '/admin/campaigns/new', color: 'bg-nolt-yellow' },
-    { name: 'Paramètres emails', icon: Megaphone, href: '/admin/email-settings', color: 'bg-blue-500' },
+    { name: 'Nouvelle boutique', icon: Store, href: '/admin/shops/new', color: 'var(--brand-secondary, #FFD600)' },
+    { name: 'Nouvelle campagne', icon: Megaphone, href: '/admin/campaigns/new', color: 'var(--brand-primary, #222)' },
+    { name: 'Paramètres emails', icon: Megaphone, href: '/admin/email-settings', color: '#3b82f6' },
   ];
 
   const recentItems = [
@@ -50,19 +50,19 @@ export function Dashboard() {
       name: 'Commandes récentes',
       icon: Package,
       href: '/admin/orders',
-      color: 'text-nolt-orange',
+      color: 'var(--brand-secondary, #FFD600)',
     },
     {
       name: 'Boutiques',
       icon: Store,
       href: '/admin/shops',
-      color: 'text-blue-500',
+      color: '#3b82f6',
     },
     {
       name: 'Campagnes',
       icon: Megaphone,
       href: '/admin/campaigns',
-      color: 'text-purple-500',
+      color: '#a78bfa',
     },
   ];
 
@@ -70,7 +70,7 @@ export function Dashboard() {
     <div className="space-y-8 p-6">
       {/* En-tête */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-thunder text-nolt-orange">Tableau de bord</h1>
+        <h1 className="text-3xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>Tableau de bord</h1>
       </div>
 
       {/* Statistiques */}
@@ -88,27 +88,27 @@ export function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 font-montserrat">Commandes</p>
-                  <p className="text-2xl font-thunder text-nolt-orange">{stats?.ordersCount || 0}</p>
+                  <p className="text-2xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>{stats?.ordersCount || 0}</p>
                 </div>
-                <ShoppingCart className="w-8 h-8 text-nolt-orange" />
+                <ShoppingCart className="w-8 h-8" style={{color: 'var(--brand-secondary, #FFD600)'}} />
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 font-montserrat">Boutiques</p>
-                  <p className="text-2xl font-thunder text-nolt-orange">{stats?.shopsCount || 0}</p>
+                  <p className="text-2xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>{stats?.shopsCount || 0}</p>
                 </div>
-                <Store className="w-8 h-8 text-nolt-orange" />
+                <Store className="w-8 h-8" style={{color: 'var(--brand-secondary, #FFD600)'}} />
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 font-montserrat">Campagnes</p>
-                  <p className="text-2xl font-thunder text-nolt-orange">{stats?.campaignsCount || 0}</p>
+                  <p className="text-2xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>{stats?.campaignsCount || 0}</p>
                 </div>
-                <Megaphone className="w-8 h-8 text-nolt-orange" />
+                <Megaphone className="w-8 h-8" style={{color: 'var(--brand-secondary, #FFD600)'}} />
               </div>
             </div>
           </>
@@ -121,7 +121,8 @@ export function Dashboard() {
           <Link
             key={action.name}
             to={action.href}
-            className={`${action.color} text-white rounded-lg p-6 hover:opacity-90 transition-opacity`}
+            className="rounded-lg p-6 hover:opacity-90 transition-opacity"
+            style={{background: action.color, color: action.color === '#fff' ? '#222' : '#fff'}}
           >
             <div className="flex items-center space-x-4">
               <action.icon className="w-8 h-8" />

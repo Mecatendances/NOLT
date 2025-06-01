@@ -22,13 +22,13 @@ const getStatusColor = (status: string) => {
 const getRoleBadge = (role: string) => {
   switch (role) {
     case 'SUPERADMIN':
-      return { color: 'bg-purple-100 text-purple-800', icon: <Crown className="h-4 w-4" />, label: 'Super Admin' };
+      return { color: 'background: #f3e8ff; color: #7c3aed;', icon: <Crown className="h-4 w-4" />, label: 'Super Admin' };
     case 'ADMIN':
-      return { color: 'bg-blue-100 text-blue-800', icon: <Crown className="h-4 w-4" />, label: 'Admin' };
+      return { color: 'background: #dbeafe; color: #1d4ed8;', icon: <Crown className="h-4 w-4" />, label: 'Admin' };
     case 'LICENSEE':
-      return { color: 'bg-nolt-orange/10 text-nolt-orange', icon: <Store className="h-4 w-4" />, label: 'Licencié' };
+      return { color: 'background: var(--brand-secondary, #FFD600)10; color: var(--brand-secondary, #FFD600);', icon: <Store className="h-4 w-4" />, label: 'Licencié' };
     default:
-      return { color: 'bg-gray-100 text-gray-800', icon: <User className="h-4 w-4" />, label: 'Client' };
+      return { color: 'background: #f3f4f6; color: #374151;', icon: <User className="h-4 w-4" />, label: 'Client' };
   }
 };
 
@@ -181,7 +181,8 @@ export function Profile() {
             <div className="flex gap-4 mt-6">
               <button 
                 onClick={save} 
-                className="px-6 py-2 bg-nolt-orange text-white rounded-lg hover:bg-nolt-yellow transition-colors font-montserrat"
+                className="px-6 py-2 rounded-lg transition-colors font-montserrat"
+                style={{background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}}
               >
                 Enregistrer
               </button>
@@ -230,7 +231,8 @@ export function Profile() {
             </div>
             <button 
               onClick={() => setEditMode(true)} 
-              className="mt-6 px-6 py-2 bg-nolt-orange text-white rounded-lg hover:bg-nolt-yellow transition-colors font-montserrat"
+              className="mt-6 px-6 py-2 rounded-lg transition-colors font-montserrat"
+              style={{background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}}
             >
               Modifier
             </button>
@@ -240,12 +242,12 @@ export function Profile() {
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-nolt-yellow transition-all duration-300">
         <div className="flex items-center gap-2 mb-6">
-          <ShoppingBag className="h-6 w-6 text-nolt-orange" />
+          <ShoppingBag className="h-6 w-6" style={{color: 'var(--brand-secondary, #FFD600)'}} />
           <h2 className="text-2xl font-thunder italic text-nolt-black">Mes commandes</h2>
         </div>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-nolt-orange"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{borderColor: 'var(--brand-secondary, #FFD600)'}}></div>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-8">

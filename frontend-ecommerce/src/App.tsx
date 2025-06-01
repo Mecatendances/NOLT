@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { RequireAuth } from './components/RequireAuth';
 import { TopBar } from './components/TopBar';
+import { useBranding } from './hooks/useBranding';
 
 // Layouts
 import { AdminLayout } from './layouts/AdminLayout';
@@ -48,6 +49,28 @@ import BrandingSettings from './pages/admin/BrandingSettings';
 const queryClient = new QueryClient();
 
 function App() {
+  // Récupérer le branding global (favicon global par défaut)
+  const { branding } = useBranding();
+
+  useEffect(() => {
+    if (branding?.favicon) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = branding.favicon;
+    }
+    // Couleurs dynamiques
+    if (branding?.primaryColor) {
+      document.documentElement.style.setProperty('--brand-primary', branding.primaryColor);
+    }
+    if (branding?.secondaryColor) {
+      document.documentElement.style.setProperty('--brand-secondary', branding.secondaryColor);
+    }
+  }, [branding?.favicon, branding?.primaryColor, branding?.secondaryColor]);
+
   return (
     <Router>
       <QueryClientProvider client={queryClient}>

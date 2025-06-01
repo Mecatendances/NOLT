@@ -52,7 +52,8 @@ export function AdminDashboard() {
               href="https://wearenolt.com" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-2xl font-thunder text-nolt-orange hover:text-orange-600 transition-colors"
+              className="text-2xl font-thunder transition-colors"
+              style={{color: 'var(--brand-primary, #0E214A)'}}
             >
               NOLT Admin
             </a>
@@ -66,10 +67,13 @@ export function AdminDashboard() {
                 className={`
                   w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors
                   ${isActive(item.path, item.exact)
-                    ? 'bg-orange-50 text-nolt-orange'
+                    ? 'bg-orange-50'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }
                 `}
+                style={{
+                  color: isActive(item.path, item.exact) ? 'var(--brand-primary, #0E214A)' : 'inherit'
+                }}
               >
                 <item.icon className="mr-3 h-5 w-5" />
                 {item.name}

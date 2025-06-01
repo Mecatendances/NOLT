@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { shopApi } from '../../../services/api';
@@ -12,10 +12,39 @@ import {
   Plus
 } from 'lucide-react';
 import type { Product } from '../../../types/shop';
+import { Switch, FormControlLabel, Snackbar, Alert } from '@mui/material';
 
 export default function ShopAdminDashboard() {
   const { id } = useParams();
   const [searchQuery, setSearchQuery] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState('');
+
+  // Charger la boutique pour le statut public/privé
+  const { data: shop, refetch } = useQuery({
+    queryKey: ['shop', id],
+    queryFn: () => shopApi.getShop(id!),
+    enabled: !!id
+  });
+  const [isPublic, setIsPublic] = useState(shop?.isPublic ?? false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (shop) setIsPublic(shop.isPublic);
+  }, [shop]);
+
+  const handleTogglePublic = async () => {
+    setSaving(true);
+    try {
+      await shopApi.updateShop(id!, { isPublic: !isPublic });
+      setIsPublic(!isPublic);
+      refetch();
+      setSnackbarMsg(!isPublic ? 'La boutique est maintenant publique.' : 'La boutique est maintenant privée.');
+      setSnackbarOpen(true);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Statistiques de la boutique
   const { data: stats, isLoading: isLoadingStats } = useQuery({
@@ -67,9 +96,30 @@ export default function ShopAdminDashboard() {
   return (
     <div className="space-y-8 p-6">
       {/* En-tête */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-thunder text-nolt-orange">Tableau de bord</h1>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <h1 className="text-3xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>Tableau de bord</h1>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={isPublic}
+              onChange={handleTogglePublic}
+              color="primary"
+              disabled={saving}
+            />
+          }
+          label={isPublic ? "Boutique publique (visible par tous)" : "Boutique privée (non listée)"}
+        />
       </div>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+          {snackbarMsg}
+        </Alert>
+      </Snackbar>
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -86,36 +136,36 @@ export default function ShopAdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 font-montserrat">Commandes</p>
-                  <p className="text-2xl font-thunder text-nolt-orange">{stats?.ordersCount || 0}</p>
+                  <p className="text-2xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>{stats?.ordersCount || 0}</p>
                 </div>
-                <ShoppingCart className="w-8 h-8 text-nolt-orange" />
+                <ShoppingCart className="w-8 h-8" style={{color: 'var(--brand-secondary, #FFD600)'}} />
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 font-montserrat">Produits</p>
-                  <p className="text-2xl font-thunder text-nolt-orange">{stats?.productsCount || 0}</p>
+                  <p className="text-2xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>{stats?.productsCount || 0}</p>
                 </div>
-                <Package className="w-8 h-8 text-nolt-orange" />
+                <Package className="w-8 h-8" style={{color: 'var(--brand-secondary, #FFD600)'}} />
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 font-montserrat">Campagnes</p>
-                  <p className="text-2xl font-thunder text-nolt-orange">{stats?.campaignsCount || 0}</p>
+                  <p className="text-2xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>{stats?.campaignsCount || 0}</p>
                 </div>
-                <Megaphone className="w-8 h-8 text-nolt-orange" />
+                <Megaphone className="w-8 h-8" style={{color: 'var(--brand-secondary, #FFD600)'}} />
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 font-montserrat">CA total</p>
-                  <p className="text-2xl font-thunder text-nolt-orange">{stats?.totalRevenue?.toFixed(2) || '0.00'} €</p>
+                  <p className="text-2xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>{stats?.totalRevenue?.toFixed(2) || '0.00'} €</p>
                 </div>
-                <Store className="w-8 h-8 text-nolt-orange" />
+                <Store className="w-8 h-8" style={{color: 'var(--brand-secondary, #FFD600)'}} />
               </div>
             </div>
           </>
@@ -128,7 +178,8 @@ export default function ShopAdminDashboard() {
           <Link
             key={action.name}
             to={action.href}
-            className={`${action.color} text-white rounded-lg p-6 hover:opacity-90 transition-opacity`}
+            className="rounded-lg p-6 hover:opacity-90 transition-opacity"
+            style={{background: 'var(--brand-secondary, #FFD600)', color: '#fff'}}
           >
             <div className="flex items-center space-x-4">
               <action.icon className="w-8 h-8" />
@@ -157,7 +208,7 @@ export default function ShopAdminDashboard() {
       {/* Produits de la boutique */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b">
-          <h2 className="text-xl font-thunder text-nolt-orange">Produits de la boutique</h2>
+          <h2 className="text-xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>Produits de la boutique</h2>
         </div>
         <div className="p-6">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -204,10 +255,10 @@ export default function ShopAdminDashboard() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-thunder text-lg text-nolt-black">{product.label}</h3>
+                    <h3 className="font-thunder text-lg" style={{color: 'var(--brand-primary, #222)'}}>{product.label}</h3>
                     <p className="text-gray-500 font-montserrat">{product.ref}</p>
                   </div>
-                  <div className="font-thunder text-nolt-yellow text-xl">{product.price?.toFixed(2)}€</div>
+                  <div className="font-thunder text-xl" style={{color: 'var(--brand-secondary, #FFD600)'}}>{product.price?.toFixed(2)}€</div>
                 </div>
               ))}
             </div>

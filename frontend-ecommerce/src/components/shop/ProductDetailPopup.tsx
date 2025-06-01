@@ -222,22 +222,22 @@ export function ProductDetailPopup({ product, isOpen, onClose }: ProductDetailPo
 
                 {/* Caractéristiques du produit */}
                 <div className="mt-8 border-t pt-6">
-                  <h3 className="font-semibold text-nolt-black mb-3 font-montserrat">Caractéristiques</h3>
+                  <h3 className="font-semibold mb-3 font-montserrat" style={{color: 'var(--brand-primary, #222)'}}>Caractéristiques</h3>
                   <ul className="space-y-2 text-sm text-gray-600 font-montserrat">
                     <li className="flex items-start">
-                      <span className="text-nolt-yellow mr-2">•</span>
+                      <span style={{color: 'var(--brand-secondary, #FFD600)', marginRight: '0.5rem'}}>•</span>
                       100% polyester recyclé, technologie DriFit
                     </li>
                     <li className="flex items-start">
-                      <span className="text-nolt-yellow mr-2">•</span>
+                      <span style={{color: 'var(--brand-secondary, #FFD600)', marginRight: '0.5rem'}}>•</span>
                       Logo FC Chalon brodé
                     </li>
                     <li className="flex items-start">
-                      <span className="text-nolt-yellow mr-2">•</span>
+                      <span style={{color: 'var(--brand-secondary, #FFD600)', marginRight: '0.5rem'}}>•</span>
                       Lavable en machine à 30°C
                     </li>
                     <li className="flex items-start">
-                      <span className="text-nolt-yellow mr-2">•</span>
+                      <span style={{color: 'var(--brand-secondary, #FFD600)', marginRight: '0.5rem'}}>•</span>
                       Conçu et fabriqué en France
                     </li>
                   </ul>

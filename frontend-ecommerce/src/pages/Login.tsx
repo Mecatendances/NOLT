@@ -77,7 +77,8 @@ export function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-nolt-orange focus:border-nolt-orange"
+                className="appearance-none block w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none"
+                style={{boxShadow: '0 0 0 2px var(--brand-secondary, #FFD600)', borderColor: 'var(--brand-secondary, #FFD600)'}}
                 placeholder="••••••••"
               />
               <Lock className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
@@ -87,9 +88,8 @@ export function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-nolt-orange hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nolt-orange ${
-              isLoading ? 'opacity-75 cursor-not-allowed' : ''
-            }`}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white transition-colors"
+            style={{background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}}
           >
             {isLoading ? 'Connexion...' : 'Se connecter'}
           </button>

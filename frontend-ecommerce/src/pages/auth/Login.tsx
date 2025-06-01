@@ -79,7 +79,8 @@ export function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-nolt-orange hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nolt-orange"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 font-montserrat"
+            style={{background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}}
           >
             {isLoading ? 'Connexion...' : 'Se connecter'}
           </button>

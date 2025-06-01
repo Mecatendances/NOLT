@@ -39,8 +39,9 @@ export function ProductList({ products = [], onProductSelect, selectedProducts =
         <div
           key={product.id}
           className={`relative rounded-lg border p-4 transition-all hover:shadow-md ${
-            isSelected(product) ? 'border-nolt-orange bg-orange-50' : 'border-gray-200'
+            isSelected(product) ? '' : 'border-gray-200'
           }`}
+          style={isSelected(product) ? {borderColor: 'var(--brand-secondary, #FFD600)', background: 'var(--brand-secondary, #FFF8E1)'} : {}}
         >
           <div className="relative aspect-square overflow-hidden rounded-lg">
             {product.images && product.images.length > 0 ? (
@@ -53,7 +54,7 @@ export function ProductList({ products = [], onProductSelect, selectedProducts =
           </div>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="font-bold text-lg text-nolt-black">
+              <h3 className="font-bold text-lg" style={{color: 'var(--brand-primary, #222)'}}>
                 {product.webLabel || product.label}
               </h3>
               <p className="mt-1 text-sm text-gray-500">{product.ref}</p>
@@ -61,7 +62,7 @@ export function ProductList({ products = [], onProductSelect, selectedProducts =
                 <p className="mt-2 text-sm text-gray-600">{product.description}</p>
               )}
               <div className="mt-2 flex items-center gap-4">
-                <span className="text-lg font-semibold text-nolt-orange">
+                <span className="text-lg font-semibold" style={{color: 'var(--brand-secondary, #FFD600)'}}>
                   {product.price.toFixed(2)}€
                 </span>
                 <span className="flex items-center gap-1 text-sm text-gray-600">
@@ -72,11 +73,10 @@ export function ProductList({ products = [], onProductSelect, selectedProducts =
             </div>
             <button
               onClick={() => onProductSelect(product)}
-              className={`rounded-full p-2 transition-colors ${
-                isSelected(product)
-                  ? 'bg-nolt-orange text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-nolt-orange hover:text-white'
-              }`}
+              className={`rounded-full p-2 transition-colors`}
+              style={isSelected(product)
+                ? {background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}
+                : {background: '#f3f4f6', color: '#52525b'}}
             >
               <ShoppingBag className="h-5 w-5" />
             </button>

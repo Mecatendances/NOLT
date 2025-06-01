@@ -198,7 +198,8 @@ export default function Catalog() {
                 {filteredProducts.map((product) => (
                   <div 
                     key={product.id} 
-                    className="group border border-gray-200 hover:border-nolt-yellow transition-all duration-300 rounded-lg overflow-hidden flex flex-col bg-white"
+                    className="group border border-gray-200 transition-all duration-300 rounded-lg overflow-hidden flex flex-col bg-white"
+                    style={{borderColor: 'var(--brand-secondary, #FFD600)'}}
                   >
                     <div 
                       className="w-full relative cursor-pointer"

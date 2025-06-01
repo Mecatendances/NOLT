@@ -8,6 +8,7 @@ import { CartDrawer } from '../../components/CartDrawer';
 import { ProductDetailPopup } from '../../components/shop/ProductDetailPopup';
 import type { Product, CategoryTree, Shop } from '../../types/shop';
 import Footer from '../../components/Footer';
+import { useBranding } from '../../hooks/useBranding';
 
 export function PublicShopView() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,9 @@ export function PublicShopView() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Branding dynamique de la boutique
+  const { branding } = useBranding(id);
 
   // For product quantity selection
   const [quantities, setQuantities] = useState<Record<number, number>>({});
@@ -158,27 +162,28 @@ export function PublicShopView() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero banner */}
-      <div className="relative bg-nolt-black py-24 flex items-center justify-center overflow-hidden">
+      <div className="relative py-24 flex items-center justify-center overflow-hidden" style={{background: 'var(--brand-primary, #0E214A)'}}>
         {/* Main background image */}
         <div className="absolute inset-0">
           <img 
-            src="https://pic.gowizzyou.com/uploads/chalon_back.png" 
-            alt="FC Chalon player" 
+            src={branding?.coverImage || "https://pic.gowizzyou.com/uploads/chalon_back.png"}
+            alt={branding?.name || "FC Chalon player"}
             className="w-full h-full object-cover"
           />
         </div>
         
         {/* Diagonal overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-nolt-orange/80 via-nolt-orange/70 to-nolt-black/70" />
+        <div className="absolute inset-0" style={{background: 'linear-gradient(135deg, var(--brand-primary, #0E214A) 90%, #18181b 100%)', opacity: 0.9}} />
         
         <div className="relative text-center text-white px-4 max-w-4xl mx-auto">
-          <div className="mb-4 text-nolt-yellow font-montserrat font-bold tracking-wider">INDESTRUCTIBLES DEPUIS 1926</div>
-          <h1 className="font-thunder text-7xl mb-6 tracking-tight italic uppercase">{shop.name}</h1>
-          <p className="max-w-2xl mx-auto text-xl font-montserrat">{shop.description}</p>
+          <div className="mb-4 font-montserrat font-bold tracking-wider" style={{ color: 'var(--brand-secondary, #FFD600)' }}>INDESTRUCTIBLES DEPUIS 1926</div>
+          <h1 className="font-thunder text-7xl mb-6 tracking-tight italic uppercase">{branding?.name || shop.name}</h1>
+          <p className="max-w-2xl mx-auto text-xl font-montserrat">{branding?.description || shop.description}</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <button 
               onClick={() => document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-8 py-3 bg-nolt-yellow text-nolt-black rounded-xl font-semibold flex items-center gap-2 hover:bg-yellow-300 transition-colors text-lg font-montserrat"
+              className="px-8 py-3 rounded-xl font-semibold flex items-center gap-2 transition-colors text-lg font-montserrat"
+              style={{ background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)' }}
             >
               Découvrir nos produits
               <ArrowRight className="h-5 w-5" />
@@ -193,18 +198,20 @@ export function PublicShopView() {
           <div className="flex items-center justify-between">
             <Link
               to="/public/shops"
-              className="inline-flex items-center gap-2 text-nolt-orange hover:text-nolt-yellow transition-colors font-montserrat"
+              className="inline-flex items-center gap-2 transition-colors font-montserrat"
+              style={{color: 'var(--brand-primary, #0E214A)'}}
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="font-medium">Retour aux boutiques</span>
             </Link>
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative inline-flex items-center gap-2 text-nolt-orange hover:text-nolt-yellow transition-colors"
+              className="relative inline-flex items-center gap-2 transition-colors"
+              style={{color: 'var(--brand-primary, #0E214A)'}}
             >
               <ShoppingBag className="h-6 w-6" />
               {itemCount > 0 && (
-                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nolt-yellow text-xs text-nolt-black font-bold">
+                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold" style={{background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}}>
                   {itemCount}
                 </span>
               )}
@@ -216,9 +223,9 @@ export function PublicShopView() {
       <div className="container mx-auto max-w-7xl px-4 py-12">
         {/* Breadcrumb */}
         <div className="flex items-center text-sm mb-10">
-          <Link to="/home" className="text-gray-500 hover:text-nolt-orange transition-colors font-montserrat">Accueil</Link>
+          <Link to="/home" className="text-gray-500 hover:text-nolt-orange transition-colors font-montserrat" style={{color: 'var(--brand-primary, #0E214A)'}}>Accueil</Link>
           <ChevronRight className="h-4 w-4 mx-2 text-gray-400" />
-          <Link to="/public/shops" className="text-gray-500 hover:text-nolt-orange transition-colors font-montserrat">Boutiques</Link>
+          <Link to="/public/shops" className="text-gray-500 hover:text-nolt-orange transition-colors font-montserrat" style={{color: 'var(--brand-primary, #0E214A)'}}>Boutiques</Link>
           <ChevronRight className="h-4 w-4 mx-2 text-gray-400" />
           <span className="font-semibold font-montserrat">{shop.name}</span>
         </div>
@@ -287,7 +294,7 @@ export function PublicShopView() {
                   <input
                     type="text"
                     placeholder="Rechercher..."
-                    className="w-full sm:w-80 px-4 py-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-nolt-yellow font-montserrat"
+                    className="w-full sm:w-80 px-4 py-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--brand-secondary,#FFD600)] font-montserrat"
                   />
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
@@ -295,7 +302,8 @@ export function PublicShopView() {
 
               <div className="flex items-center gap-4">
                 <button 
-                  className="lg:hidden flex items-center gap-1 text-nolt-orange hover:text-nolt-yellow transition-colors font-montserrat"
+                  className="lg:hidden flex items-center gap-1 transition-colors font-montserrat"
+                  style={{color: 'var(--brand-primary, #0E214A)'}}
                   onClick={() => setFilterOpen(true)}
                 >
                   <Filter className="h-5 w-5" />
@@ -305,14 +313,16 @@ export function PublicShopView() {
                 <div className="hidden sm:flex items-center gap-3 text-gray-600">
                   <span className="font-montserrat">Affichage:</span>
                   <button 
-                    className={`p-1 rounded ${viewMode === 'grid' ? 'bg-gray-100 text-nolt-yellow' : 'hover:text-nolt-yellow'}`}
+                    className={`p-1 rounded ${viewMode === 'grid' ? 'bg-gray-100' : ''}`}
                     onClick={() => setViewMode('grid')}
+                    style={{color: viewMode === 'grid' ? 'var(--brand-secondary, #FFD600)' : 'inherit'}}
                   >
                     <Grid className="h-5 w-5" />
                   </button>
                   <button 
-                    className={`p-1 rounded ${viewMode === 'list' ? 'bg-gray-100 text-nolt-yellow' : 'hover:text-nolt-yellow'}`}
+                    className={`p-1 rounded ${viewMode === 'list' ? 'bg-gray-100' : ''}`}
                     onClick={() => setViewMode('list')}
+                    style={{color: viewMode === 'list' ? 'var(--brand-secondary, #FFD600)' : 'inherit'}}
                   >
                     <List className="h-5 w-5" />
                   </button>
@@ -355,9 +365,10 @@ export function PublicShopView() {
                   {filteredProducts.map((product) => (
                     <div 
                       key={product.id} 
-                      className={`group border border-gray-200 hover:border-nolt-yellow transition-all duration-300 rounded-lg overflow-hidden ${
+                      className={`group border border-gray-200 transition-all duration-300 rounded-lg overflow-hidden ${
                         viewMode === 'grid' ? 'flex flex-col bg-white' : 'flex bg-white'
                       }`}
+                      style={{borderColor: 'var(--brand-secondary, #FFD600)'}}
                     >
                       {/* Product image */}
                       <div 
@@ -379,13 +390,13 @@ export function PublicShopView() {
                         {/* Quick actions overlay */}
                         <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button className="bg-white rounded-full p-2 shadow-md hover:bg-gray-50 transition-colors">
-                            <Heart className="h-5 w-5 text-nolt-orange hover:text-nolt-yellow transition-colors" />
+                            <Heart className="h-5 w-5 transition-colors" style={{color: 'var(--brand-primary, #0E214A)'}} />
                           </button>
                         </div>
 
                         {/* Tag overlay for new products */}
                         {product.id % 3 === 0 && (
-                          <div className="absolute top-3 left-3 bg-nolt-yellow text-nolt-black px-3 py-1 rounded-md font-thunder text-sm font-bold uppercase">
+                          <div className="absolute top-3 left-3 px-3 py-1 rounded-md font-thunder text-sm font-bold uppercase" style={{background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}}>
                             Nouveau
                           </div>
                         )}
@@ -395,7 +406,8 @@ export function PublicShopView() {
                       <div className={`flex-1 p-5 flex flex-col ${viewMode === 'list' ? 'justify-between' : ''}`}>
                         <div>
                           <h3 
-                            className="font-thunder text-xl uppercase text-nolt-black group-hover:text-nolt-orange transition-colors leading-tight cursor-pointer"
+                            className="font-thunder text-xl uppercase leading-tight cursor-pointer transition-colors"
+                            style={{color: 'var(--brand-primary, #222)'}}
                             onClick={() => setSelectedProduct(product)}
                           >
                             {product.label}
@@ -412,7 +424,8 @@ export function PublicShopView() {
                             {[1, 2, 3, 4, 5].map((star) => (
                               <Star 
                                 key={star} 
-                                className={`h-4 w-4 ${star <= 4 ? 'text-nolt-yellow fill-nolt-yellow' : 'text-gray-300'}`} 
+                                className={`h-4 w-4 ${star <= 4 ? 'fill-current' : 'text-gray-300'}`}
+                                style={{color: star <= 4 ? 'var(--brand-secondary, #FFD600)' : 'inherit'}}
                               />
                             ))}
                             <span className="text-xs text-gray-500 ml-1 font-montserrat">(12)</span>
@@ -424,11 +437,12 @@ export function PublicShopView() {
                               {sizes.map(size => (
                                 <button 
                                   key={size}
-                                  className={`w-8 h-8 text-xs border ${
-                                    selectedSize === size 
-                                      ? 'border-nolt-yellow bg-nolt-yellow/10 text-nolt-orange' 
-                                      : 'border-gray-300 hover:border-nolt-yellow'
-                                  } rounded-md flex items-center justify-center font-medium font-montserrat`}
+                                  className={`w-8 h-8 text-xs border rounded-md flex items-center justify-center font-medium font-montserrat`}
+                                  style={{
+                                    borderColor: selectedSize === size ? 'var(--brand-secondary, #FFD600)' : '#e5e7eb',
+                                    background: selectedSize === size ? 'var(--brand-secondary, #FFD600)' : 'transparent',
+                                    color: selectedSize === size ? 'var(--brand-primary, #222)' : 'inherit'
+                                  }}
                                   onClick={() => setSelectedSize(size === selectedSize ? null : size)}
                                 >
                                   {size}
@@ -541,7 +555,7 @@ export function PublicShopView() {
           onClose={() => setSelectedProduct(null)}
         />
       )}
-      <Footer />
+      <Footer shopId={id} />
     </div>
   );
 }

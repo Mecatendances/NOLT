@@ -6,16 +6,17 @@ import { shopApi } from '../../services/api';
 import Footer from '../../components/Footer';
 
 export function PublicShopsList() {
-  // Récupérer toutes les boutiques
-  const { data: shops = [], isLoading } = useQuery({
+  const { data: shops = [], isLoading, error } = useQuery({
     queryKey: ['public-shops'],
-    queryFn: shopApi.getShops,
+    queryFn: shopApi.getPublicShops,
   });
+
+  console.log('État des boutiques:', { shops, isLoading, error });
 
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section / Concept */}
-      <div className="relative bg-nolt-black py-32 flex items-center justify-center overflow-hidden">
+      <div className="relative py-32 flex items-center justify-center overflow-hidden" style={{background: 'var(--brand-primary, #0E214A)'}}>
         <div className="absolute inset-0">
           <img 
             src="https://pic.gowizzyou.com/uploads/fcchalon.png" 
@@ -23,10 +24,10 @@ export function PublicShopsList() {
             className="w-full h-full object-cover opacity-60"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-nolt-orange/90 to-black/70" />
+        <div className="absolute inset-0" style={{background: 'linear-gradient(135deg, var(--brand-primary, #0E214A) 90%, #18181b 100%)', opacity: 0.9}} />
         <div className="relative text-center text-white px-4 max-w-3xl mx-auto">
           <h1 className="font-thunder text-6xl mb-6 tracking-tight italic uppercase">Les Boutiques NOLT</h1>
-          <p className="text-2xl font-thunder italic text-nolt-yellow mb-8">Un concept unique pour tous les clubs et communautés</p>
+          <p className="text-2xl font-thunder italic mb-8" style={{color: 'var(--brand-secondary, #FFD600)'}}>Un concept unique pour tous les clubs et communautés</p>
           <p className="max-w-2xl mx-auto text-lg font-montserrat mb-10">
             NOLT permet à chaque club, association ou communauté de créer sa propre boutique en ligne, de vendre ses produits personnalisés et de fédérer ses membres autour d'une expérience e-commerce moderne et collaborative.
           </p>
@@ -40,6 +41,19 @@ export function PublicShopsList() {
           <div className="flex h-48 items-center justify-center">
             <Store className="h-12 w-12 animate-bounce text-nolt-yellow" />
             <span className="ml-4 text-nolt-black font-montserrat text-lg">Chargement des boutiques...</span>
+          </div>
+        ) : error ? (
+          <div className="flex h-48 items-center justify-center">
+            <div className="text-center">
+              <p className="text-red-500 font-montserrat text-lg">Une erreur est survenue lors du chargement des boutiques</p>
+              <p className="text-gray-500 mt-2">Veuillez réessayer plus tard</p>
+            </div>
+          </div>
+        ) : shops.length === 0 ? (
+          <div className="flex h-48 items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-500 font-montserrat text-lg">Aucune boutique publique disponible pour le moment</p>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">

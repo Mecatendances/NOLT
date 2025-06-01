@@ -93,7 +93,8 @@ export default function Register() {
           {error && <div className="text-red-500 font-montserrat">{error}</div>}
           <button
             type="submit"
-            className="bg-nolt-orange text-white px-4 py-2 rounded hover:bg-nolt-yellow"
+            className="px-4 py-2 rounded font-montserrat"
+            style={{background: 'var(--brand-secondary, #FFD600)', color: 'var(--brand-primary, #222)'}}
             disabled={loading}
           >
             Créer mon compte

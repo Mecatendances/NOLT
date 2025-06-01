@@ -59,4 +59,8 @@ export class ShopsService {
   async addProductImage(productId: string, file: Express.Multer.File) {
     return this.productImageService.addImage(productId, file);
   }
+
+  async findAllPublic() {
+    return this.shopRepository.find({ where: { isPublic: true } });
+  }
 } 

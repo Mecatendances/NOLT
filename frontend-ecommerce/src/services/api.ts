@@ -326,6 +326,17 @@ export const shopApi = {
     const res = await api.post('/users', { email });
     return res.data;
   },
+
+  getPublicShops: async (): Promise<Shop[]> => {
+    try {
+      const response = await api.get('/shops/public');
+      console.log('Réponse des boutiques publiques:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des boutiques publiques:', error);
+      return [];
+    }
+  },
 };
 
 export const userApi = {
@@ -366,7 +377,7 @@ export const adminApi = {
     if (options?.shopId) {
       params.append('shopId', options.shopId);
     }
-    return axios.get(`/api/admin/branding?${params.toString()}`);
+    return api.get(`/admin/branding?${params.toString()}`);
   },
 
   updateBrandingSettings: (settings: any, options?: { shopId?: string }) => {
@@ -374,7 +385,7 @@ export const adminApi = {
     if (options?.shopId) {
       params.append('shopId', options.shopId);
     }
-    return axios.put(`/api/admin/branding?${params.toString()}`, settings);
+    return api.put(`/admin/branding?${params.toString()}`, settings);
   },
 
   uploadBrandingImage: (type: 'logo' | 'favicon' | 'coverImage', formData: FormData, options?: { shopId?: string }) => {
@@ -382,7 +393,7 @@ export const adminApi = {
     if (options?.shopId) {
       params.append('shopId', options.shopId);
     }
-    return axios.post(`/api/admin/branding/upload/${type}?${params.toString()}`, formData, {
+    return api.post(`/admin/branding/upload/${type}?${params.toString()}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

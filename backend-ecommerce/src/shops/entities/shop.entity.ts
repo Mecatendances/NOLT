@@ -25,6 +25,9 @@ export class Shop {
   @Column({ nullable: true })
   adminId: string;
 
+  @Column({ default: false })
+  isPublic: boolean;
+
   @ManyToMany(() => UserEntity, (user) => user.shops)
   licensees: UserEntity[];
 

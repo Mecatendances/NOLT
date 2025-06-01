@@ -6,11 +6,27 @@ import { UserShopRoleService } from '../users/services/user-shop-role.service';
 import { ShopRole } from '../users/user-role.enum';
 
 @Controller('shops')
-export class ShopController { // Nommé ShopController pour la clarté
+export class ShopController {
   constructor(
     private readonly shopsService: ShopsService,
     private readonly userShopRoleService: UserShopRoleService
   ) {}
+
+  @Get('public')
+  async findAllPublic(): Promise<Shop[]> {
+    return this.shopsService.findAllPublic();
+  }
+
+  @Get('admin/my-shops')
+  @UseGuards(JwtAuthGuard)
+  async getMyAdminShops(@Request() req) {
+    const userId = req.user.sub;
+    const userShopRoles = await this.userShopRoleService.getUserShopRoles(userId, null);
+    const adminShops = userShopRoles
+      .filter(role => role.role === ShopRole.SHOP_ADMIN)
+      .map(role => role.shop);
+    return adminShops;
+  }
 
   @Get()
   async findAll(): Promise<Shop[]> {
@@ -24,16 +40,5 @@ export class ShopController { // Nommé ShopController pour la clarté
       throw new NotFoundException(`Shop with ID ${id} not found`);
     }
     return shop;
-  }
-
-  @Get('admin/my-shops')
-  @UseGuards(JwtAuthGuard)
-  async getMyAdminShops(@Request() req) {
-    const userId = req.user.sub;
-    const userShopRoles = await this.userShopRoleService.getUserShopRoles(userId, null);
-    const adminShops = userShopRoles
-      .filter(role => role.role === ShopRole.SHOP_ADMIN)
-      .map(role => role.shop);
-    return adminShops;
   }
 } 
