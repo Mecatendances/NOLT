@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Store, ArrowRight } from 'lucide-react';
 import { shopApi } from '../../services/api';
+import Footer from '../../components/Footer';
 
 export function PublicShopsList() {
   // Récupérer toutes les boutiques
@@ -58,6 +59,7 @@ export function PublicShopsList() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

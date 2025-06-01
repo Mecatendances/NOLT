@@ -7,6 +7,7 @@ import { useCart } from '../../contexts/CartContext';
 import { CartDrawer } from '../../components/CartDrawer';
 import { ProductDetailPopup } from '../../components/shop/ProductDetailPopup';
 import type { Product, CategoryTree, Shop } from '../../types/shop';
+import Footer from '../../components/Footer';
 
 export function PublicShopView() {
   const { id } = useParams<{ id: string }>();
@@ -540,6 +541,7 @@ export function PublicShopView() {
           onClose={() => setSelectedProduct(null)}
         />
       )}
+      <Footer />
     </div>
   );
 }
