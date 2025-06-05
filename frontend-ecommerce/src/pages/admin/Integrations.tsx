@@ -35,7 +35,7 @@ function getFieldsForProvider(provider: string) {
   }
 }
 
-export default function IntegrationsAdmin() {
+export function IntegrationsAdmin() {
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

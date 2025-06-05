@@ -8,6 +8,7 @@ import { ProductEntity } from '../catalog/entities/product.entity';
 import { ProductsModule } from '../products/products.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { UsersModule } from '../users/users.module';
+import { ShopAdminBrandingController } from './shop-admin-branding.controller';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UsersModule } from '../users/users.module';
   controllers: [
     DolibarrProductsShopController,
     ShopController,
+    ShopAdminBrandingController,
   ],
   providers: [ShopsService],
   exports: [ShopsService],

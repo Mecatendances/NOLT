@@ -1,2 +1,7 @@
-import Catalog from './Catalog';
+import { Catalog } from './Catalog';
+
+export function Products() {
+  return <Catalog />;
+}
+
 export default Catalog; 

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { GlobalRole } from '../types/userRole';
+import { useBranding } from '../hooks/useBranding';
 
 // Définir un type pour les éléments de navigation
 interface NavItem {
@@ -26,6 +27,7 @@ export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user, hasRole } = useAuth();
+  const { branding } = useBranding();
   
   // ID de la boutique actuelle (première boutique licenciée ou valeur par défaut)
   const myShopId = user?.licenseeShops?.[0] ?? '183';
@@ -180,15 +182,22 @@ export function AdminLayout() {
         <header className="bg-white border-b border-gray-200 h-16 fixed right-0 left-64 z-10">
           <div className="px-8 h-full flex items-center justify-between">
             <h1 className="text-xl font-thunder text-gray-900">
-              Administration
+              {branding?.name || 'Administration'}
             </h1>
-            {/* Bouton d'action rapide superadmin (suppprimé) */}
-            <Link 
-              to="/" 
-              className="text-gray-500 hover:text-nolt-orange transition-colors"
-            >
-              Voir le site
-            </Link>
+            <div className="flex items-center gap-6">
+              <Link 
+                to="/public/shops" 
+                className="text-nolt-orange hover:text-nolt-yellow font-thunder text-lg transition-colors"
+              >
+                Accueil public
+              </Link>
+              <Link 
+                to="/" 
+                className="text-gray-500 hover:text-nolt-orange transition-colors"
+              >
+                Voir le site
+              </Link>
+            </div>
           </div>
         </header>
 

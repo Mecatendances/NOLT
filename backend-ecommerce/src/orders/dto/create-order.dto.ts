@@ -12,4 +12,5 @@ export interface CreateOrderDto {
   zipCode: string;
   city: string;
   items: CreateOrderItemDto[];
+  shopId: string;
 } 

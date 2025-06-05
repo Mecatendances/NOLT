@@ -42,41 +42,25 @@ export function PublicShopView() {
     }
   };
 
-  // Charger la boutique courante
-  const { data: shop, isLoading: isLoadingShop, error } = useQuery<Shop>({
-    queryKey: ['public-shop', id],
-    queryFn: () => shopApi.getShop(id || ''),
+  // Récupérer les informations de la boutique
+  const { data: shop, isLoading: isLoadingShop } = useQuery<Shop>({
+    queryKey: ['shop', id],
+    queryFn: () => shopApi.getShop(id!),
     enabled: !!id
   });
 
-  // Charger les sous-catégories de la boutique courante
-  const [subcategories, setSubcategories] = useState<{id: string, label: string}[]>([]);
-  const [isLoadingCategory, setIsLoadingCategory] = useState(true);
-  const [errorCategory, setErrorCategory] = useState<string | null>(null);
-
+  // Stocker le shopId dans le localStorage
   useEffect(() => {
-    if (!shop) return;
-    setIsLoadingCategory(true);
-    setErrorCategory(null);
-    fetch('http://localhost:4000/api/catalog/categories')
-      .then(res => res.json())
-      .then(async (categories) => {
-        const racine = categories.find((cat: any) => cat.dolibarrId === shop.dolibarrCategoryId);
-        if (!racine) {
-          setSubcategories([]);
-          setIsLoadingCategory(false);
-          setErrorCategory('Catégorie racine non trouvée');
-          return;
-        }
-        fetch(`http://localhost:4000/api/catalog/categories?parent=${racine.id}`)
-          .then(res => res.json())
-          .then(async (subcats) => {
-            const subCategories = subcats.map((cat: any) => ({ id: String(cat.id), label: cat.label }));
-            setSubcategories(subCategories);
-            setIsLoadingCategory(false);
-          });
-      });
-  }, [shop]);
+    if (id) {
+      localStorage.setItem('currentShopId', id);
+    }
+  }, [id]);
+
+  // Récupérer les catégories
+  const { data: subcategories = [], isLoading: isLoadingCategory } = useQuery<CategoryTree[]>({
+    queryKey: ['categories'],
+    queryFn: shopApi.getCategories
+  });
 
   // Générer dynamiquement les catégories d'affichage à partir des sous-catégories
   type DisplayCategory = { id: string; name: string; count: number; subcategoryId?: string };
@@ -128,7 +112,7 @@ export function PublicShopView() {
     );
   }
 
-  if (error || !shop) {
+  if (!shop) {
     return (
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <div className="rounded-xl bg-red-50 p-8 text-center">
@@ -150,9 +134,6 @@ export function PublicShopView() {
     );
   }
 
-  if (errorCategory) {
-    return <div>Erreur lors du chargement des sous-catégories.</div>;
-  }
   if (!isLoadingCategory && subcategories && subcategories.length === 0) {
     return <div>Aucune sous-catégorie trouvée.</div>;
   }
@@ -543,7 +524,7 @@ export function PublicShopView() {
         onClose={() => setIsCartOpen(false)}
         onCheckout={() => {
           setIsCartOpen(false);
-          navigate('/checkout');
+          navigate(`/checkout/${id}`);
         }}
       />
 

@@ -4,32 +4,64 @@ import { Link } from 'react-router-dom';
 import { Store, ArrowRight } from 'lucide-react';
 import { shopApi } from '../../services/api';
 import Footer from '../../components/Footer';
+import { useBranding } from '../../hooks/useBranding';
 
 export function PublicShopsList() {
   const { data: shops = [], isLoading, error } = useQuery({
     queryKey: ['public-shops'],
     queryFn: shopApi.getPublicShops,
   });
+  const { branding } = useBranding();
 
   console.log('État des boutiques:', { shops, isLoading, error });
 
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section / Concept */}
-      <div className="relative py-32 flex items-center justify-center overflow-hidden" style={{background: 'var(--brand-primary, #0E214A)'}}>
+      <div
+        className="relative py-32 flex items-center justify-center overflow-hidden"
+        style={{
+          background: branding?.primaryColor || 'var(--brand-primary, #0E214A)',
+        }}
+      >
         <div className="absolute inset-0">
-          <img 
-            src="https://pic.gowizzyou.com/uploads/fcchalon.png" 
-            alt="Boutiques NOLT" 
-            className="w-full h-full object-cover opacity-60"
-          />
+          {branding?.landingCoverImage ? (
+            <img
+              src={branding.landingCoverImage}
+              alt="Boutiques NOLT"
+              className="w-full h-full object-cover opacity-60"
+            />
+          ) : (
+            <img
+              src="https://pic.gowizzyou.com/uploads/fcchalon.png"
+              alt="Boutiques NOLT"
+              className="w-full h-full object-cover opacity-60"
+            />
+          )}
         </div>
-        <div className="absolute inset-0" style={{background: 'linear-gradient(135deg, var(--brand-primary, #0E214A) 90%, #18181b 100%)', opacity: 0.9}} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(135deg, ' +
+              (branding?.primaryColor || '#0E214A') +
+              ' 90%, #18181b 100%)',
+            opacity: 0.9,
+          }}
+        />
         <div className="relative text-center text-white px-4 max-w-3xl mx-auto">
-          <h1 className="font-thunder text-6xl mb-6 tracking-tight italic uppercase">Les Boutiques NOLT</h1>
-          <p className="text-2xl font-thunder italic mb-8" style={{color: 'var(--brand-secondary, #FFD600)'}}>Un concept unique pour tous les clubs et communautés</p>
+          <h1 className="font-thunder text-6xl mb-6 tracking-tight italic uppercase">
+            {branding?.landingTitle || 'Les Boutiques NOLT'}
+          </h1>
+          <p
+            className="text-2xl font-thunder italic mb-8"
+            style={{ color: branding?.secondaryColor || 'var(--brand-secondary, #FFD600)' }}
+          >
+            {branding?.landingSlogan || 'Un concept unique pour tous les clubs et communautés'}
+          </p>
           <p className="max-w-2xl mx-auto text-lg font-montserrat mb-10">
-            NOLT permet à chaque club, association ou communauté de créer sa propre boutique en ligne, de vendre ses produits personnalisés et de fédérer ses membres autour d'une expérience e-commerce moderne et collaborative.
+            {branding?.description ||
+              'NOLT permet à chaque club, association ou communauté de créer sa propre boutique en ligne, de vendre ses produits personnalisés et de fédérer ses membres autour d\'une expérience e-commerce moderne et collaborative.'}
           </p>
         </div>
       </div>

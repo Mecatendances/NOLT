@@ -23,5 +23,15 @@ export class BrandingSettings {
   @Column({ nullable: true }) contactEmail: string;
   @Column({ nullable: true }) facebookUrl: string;
   @Column({ nullable: true }) instagramUrl: string;
+  // Champs pour la landing publique
+  @Column({ nullable: true }) landingTitle: string;
+  @Column({ nullable: true }) landingSlogan: string;
+  @Column({ nullable: true }) landingCoverImage: string;
+  @Column({ nullable: true }) primaryColor: string;
+  @Column({ nullable: true }) secondaryColor: string;
+  // Champs optionnels pour le dashboard admin
+  @Column({ nullable: true }) dashboardTitle: string;
+  @Column({ nullable: true }) dashboardSlogan: string;
+  @Column({ nullable: true }) dashboardCoverImage: string;
   // Ajoute d'autres champs si besoin
 } 

@@ -17,7 +17,7 @@ interface UserShopRole {
   role: ShopRole;
 }
 
-export default function AdminUsersList() {
+export function AdminUsersList() {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [userShopRoles, setUserShopRoles] = useState<UserShopRole[]>([]);

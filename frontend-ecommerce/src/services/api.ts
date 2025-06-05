@@ -2,19 +2,23 @@ import axios from 'axios';
 import { Product, Shop, CategoryTree, ProductImage } from '../types/shop';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api',
+  baseURL: '/api',
 });
 
+// Intercepteur pour ajouter le token d'authentification
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
-    config.headers = config.headers || {};
-    config.headers['Authorization'] = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  const tenantId = localStorage.getItem('tenantId');
-  if (tenantId) {
-    config.headers = config.headers || {};
-    config.headers['X-Tenant-ID'] = tenantId;
+  return config;
+});
+
+// Intercepteur pour ajouter le x-tenant-id
+api.interceptors.request.use((config) => {
+  const shopId = localStorage.getItem('currentShopId');
+  if (shopId) {
+    config.headers['x-tenant-id'] = shopId;
   }
   return config;
 });
@@ -389,15 +393,21 @@ export const adminApi = {
   },
 
   uploadBrandingImage: (type: 'logo' | 'favicon' | 'coverImage', formData: FormData, options?: { shopId?: string }) => {
-    const params = new URLSearchParams();
     if (options?.shopId) {
-      params.append('shopId', options.shopId);
+      // Upload branding pour une boutique
+      return api.post(`/shops/${options.shopId}/admin/branding/upload/${type}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    } else {
+      // Upload branding global
+      return api.post(`/admin/branding/upload/${type}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
     }
-    return api.post(`/admin/branding/upload/${type}?${params.toString()}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
   },
 };
 
@@ -406,4 +416,104 @@ export const userShopRoleApi = {
     const response = await api.get('/user-shop-roles');
     return response.data;
   },
+};
+
+export const orderApi = {
+  getOrders: async (shopId: string) => {
+    const response = await api.get(`/orders`, {
+      headers: { 'x-tenant-id': shopId }
+    });
+    return response.data;
+  },
+  getOrder: async (id: string, shopId: string) => {
+    const response = await api.get(`/orders/${id}`, {
+      headers: { 'x-tenant-id': shopId }
+    });
+    return response.data;
+  },
+  updateStatus: async (id: string, status: string, shopId: string) => {
+    const response = await api.patch(`/orders/${id}/status`, { status }, {
+      headers: { 'x-tenant-id': shopId }
+    });
+    return response.data;
+  },
+  assignCampaign: async (orderId: string, campaignId: string | null, shopId: string) => {
+    const response = await api.patch(`/orders/${orderId}/campaign`, { campaignId }, {
+      headers: { 'x-tenant-id': shopId }
+    });
+    return response.data;
+  },
+  getAdminOrders: async () => {
+    const response = await api.get('/admin/orders');
+    return response.data;
+  },
+  getAdminOrder: async (id: string) => {
+    const response = await api.get(`/admin/orders/${id}`);
+    return response.data;
+  }
+};
+
+export const campaignApi = {
+  getCampaigns: async () => {
+    const response = await api.get('/campaigns');
+    return response.data;
+  },
+  getCampaign: async (id: string) => {
+    const response = await api.get(`/campaigns/${id}`);
+    return response.data;
+  },
+  createCampaign: async (data: any) => {
+    const response = await api.post('/campaigns', data);
+    return response.data;
+  },
+  addOrdersToCampaign: async (campaignId: string, orderIds: string[]) => {
+    const response = await api.post(`/campaigns/${campaignId}/add-orders`, { orderIds });
+    return response.data;
+  },
+  getCampaignsByShop: async () => {
+    const response = await api.get('/admin/campaigns/by-shop');
+    return response.data;
+  },
+};
+
+export const productApi = {
+  getShopProducts: async (shopId: string): Promise<Product[]> => {
+    try {
+      const response = await api.get(`/shops/${shopId}/products`);
+      const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api');
+      const staticBase = apiBase.replace(/\/api$/, '');
+      
+      return (response.data as any[]).map(prod => {
+        const images = Array.isArray(prod.images)
+          ? prod.images
+              .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+              .map((img: any) => {
+                if (!img.url) return null;
+                return img.url.startsWith('http') ? img.url : `${staticBase}${img.url}`;
+              })
+              .filter(Boolean) as string[]
+          : [];
+        
+        if (images.length === 0 && (prod.imageUrl || prod.image_url)) {
+          const imageUrl = prod.imageUrl || prod.image_url;
+          images.push(imageUrl.startsWith('http') ? imageUrl : `${staticBase}${imageUrl}`);
+        }
+
+        return {
+          id: Number(prod.id),
+          ref: prod.ref,
+          label: prod.label,
+          webLabel: prod.webLabel,
+          images,
+          price: parseFloat(prod.priceTtc ?? prod.price_ttc ?? prod.price ?? '0'),
+          stock: prod.stock ?? 0,
+          category: prod.category?.id ?? prod.category ?? '',
+          description: prod.description,
+        };
+      });
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits de la boutique', error);
+      return [];
+    }
+  }
 };

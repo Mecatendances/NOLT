@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, ChevronRight, ChevronUp, Image, Edit2, AlertCircle } from 'lucide-react';
-import { shopApi } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
-import type { Product, CategoryTree, Shop } from '../../types/shop';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ShoppingBag, ArrowLeft, Image, Edit2, AlertCircle } from 'lucide-react';
+import { shopApi, api } from '../../services/api';
+import type { Product, Shop } from '../../types/shop';
 import { AdminProductDetailPopup } from '../../components/admin/AdminProductDetailPopup';
 
 interface DisplayCategory {
@@ -15,48 +14,57 @@ interface DisplayCategory {
 }
 
 export function AdminShopCatalog() {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { shopId } = useParams<{ shopId: string }>();
   const [error, setError] = useState<string | null>(null);
   const [isLoadingCategory, setIsLoadingCategory] = useState(true);
-  const [fcChalonSubcategories, setFcChalonSubcategories] = useState<{id: string, label: string}[]>([]);
+  const [subcategories, setSubcategories] = useState<{id: string, label: string}[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>('all');
   const [popupProduct, setPopupProduct] = useState<Product | null>(null);
 
-  // 1. Charger toutes les catégories et trouver la racine FC Chalon
+  // Charger la boutique sélectionnée
+  const { data: shop, isLoading: isLoadingShop } = useQuery<Shop>({
+    queryKey: ['shop', shopId],
+    queryFn: () => shopApi.getShop(shopId!),
+    enabled: !!shopId,
+  });
+
+  // Charger les sous-catégories
   useEffect(() => {
+    if (!shopId) return;
     setIsLoadingCategory(true);
     setError(null);
-    shopApi.getCategories().then((categories) => {
-      // On suppose que getCategories retourne toutes les catégories avec dolibarrId
-      fetch('http://localhost:4000/api/catalog/categories')
-        .then(res => res.json())
-        .then(async (allCategories) => {
-          const racine = allCategories.find((cat: any) => cat.dolibarrId === 183);
-          if (!racine) {
-            setFcChalonSubcategories([]);
-            setIsLoadingCategory(false);
-            setError('Catégorie racine non trouvée');
-            return;
-          }
-          // 2. Charger les sous-catégories de la racine
-          fetch(`http://localhost:4000/api/catalog/categories?parent=${racine.id}`)
-            .then(res => res.json())
-            .then(async (subcats) => {
-              const subCategories = subcats.map((cat: any) => ({ id: String(cat.id), label: cat.label }));
-              setFcChalonSubcategories(subCategories);
-              setIsLoadingCategory(false);
-            });
-        });
-    });
-  }, []);
+    // Charger toutes les catégories de la boutique avec Axios (api)
+    api.get(`/catalog/shops/${shopId}/categories`)
+      .then(res => {
+        const allCategories = res.data;
+        // Trouver la racine (catégorie Dolibarr principale de la boutique)
+        const racine = allCategories.find((cat) => cat.dolibarrId === shop?.dolibarrCategoryId);
+        if (!racine) {
+          setSubcategories([]);
+          setIsLoadingCategory(false);
+          setError('Catégorie racine non trouvée');
+          return;
+        }
+        // Charger les sous-catégories de la racine
+        const subcats = allCategories.filter((cat) => cat.fkParent === racine.id);
+        const subCategories = subcats.map((cat) => ({ id: String(cat.id), label: cat.label }));
+        setSubcategories(subCategories);
+        setIsLoadingCategory(false);
+      })
+      .catch((err) => {
+        setError('Erreur lors du chargement des catégories');
+        setSubcategories([]);
+        setIsLoadingCategory(false);
+      });
+  }, [shopId, shop?.dolibarrCategoryId]);
 
-  // Générer dynamiquement les catégories d'affichage à partir des sous-catégories
+  // Générer dynamiquement les catégories d'affichage
   const categories = useMemo<DisplayCategory[]>(() => {
     const dynamicCategories: DisplayCategory[] = [
       { id: 'all', name: 'Tous les produits', count: 0 }
     ];
-    fcChalonSubcategories.forEach(subcat => {
+    subcategories.forEach(subcat => {
       const id = subcat.label.toLowerCase().replace(/[^a-z0-9]/g, '_');
       dynamicCategories.push({
         id,
@@ -66,23 +74,24 @@ export function AdminShopCatalog() {
       });
     });
     return dynamicCategories;
-  }, [fcChalonSubcategories]);
+  }, [subcategories]);
 
   // Récupérer les produits de la catégorie sélectionnée ou tous les produits
   const { data: selectedCategoryProducts = [], isLoading } = useQuery<Product[]>({
-    queryKey: ['admin-products-fc-chalon', selectedCategory],
+    queryKey: ['shop-products', shopId, selectedCategory, subcategories],
     queryFn: async () => {
       const selectedCatObj = categories.find(cat => cat.id === selectedCategory);
       if (selectedCategory && selectedCategory !== 'all' && selectedCatObj?.subcategoryId) {
         return shopApi.getProducts({ category: selectedCatObj.subcategoryId });
       }
-      const allProductsPromises = fcChalonSubcategories.map(
+      // Si "Tous les produits" est sélectionné, récupérer les produits de toutes les sous-catégories
+      const allProductsPromises = subcategories.map(
         subcat => shopApi.getProducts({ category: subcat.id })
       );
       const results = await Promise.all(allProductsPromises);
       return results.flat();
     },
-    enabled: !isLoadingCategory
+    enabled: !isLoadingCategory && !!shopId && subcategories.length > 0
   });
 
   // Mettre à jour le compteur de produits pour chaque catégorie
@@ -103,7 +112,7 @@ export function AdminShopCatalog() {
 
   const filteredProducts = selectedCategoryProducts;
 
-  if (isLoading || isLoadingCategory) {
+  if (isLoadingShop || isLoadingCategory || isLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
@@ -115,14 +124,42 @@ export function AdminShopCatalog() {
   }
 
   if (error) {
-    return <div>Erreur lors du chargement des sous-catégories.</div>;
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+          <p className="mt-4 font-montserrat text-red-500">{error}</p>
+        </div>
+      </div>
+    );
   }
-  if (!isLoadingCategory && fcChalonSubcategories && fcChalonSubcategories.length === 0) {
-    return <div>Aucune sous-catégorie trouvée.</div>;
+
+  if (!shop) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+          <p className="mt-4 font-montserrat text-red-500">Boutique non trouvée</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-12">
+      {/* En-tête avec bouton retour */}
+      <div className="mb-8">
+        <button
+          onClick={() => navigate('/admin/shops')}
+          className="inline-flex items-center gap-2 text-nolt-orange hover:text-nolt-yellow transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span>Retour à la liste des boutiques</span>
+        </button>
+        <h1 className="font-thunder text-4xl text-nolt-black mt-4">{shop.name}</h1>
+        <p className="text-gray-500 mt-2">{shop.description}</p>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-8" id="product-grid">
         {/* Sidebar catégories */}
         <div className="lg:w-64 bg-white">
@@ -174,15 +211,16 @@ export function AdminShopCatalog() {
                 {filteredProducts.map((product) => (
                   <div 
                     key={product.id} 
-                    className="group border border-gray-200 hover:border-nolt-yellow transition-all duration-300 rounded-lg overflow-hidden flex flex-col bg-white"
+                    className="group border border-gray-200 transition-all duration-300 rounded-lg overflow-hidden flex flex-col bg-white"
+                    style={{borderColor: 'var(--brand-secondary, #FFD600)'}}
                   >
                     <div 
                       className="w-full relative cursor-pointer"
                       onClick={() => setPopupProduct(product)}
                     >
-                      {product.imageUrl ? (
+                      {product.images && product.images.length > 0 ? (
                         <img
-                          src={product.imageUrl}
+                          src={product.images[0]}
                           alt={product.webLabel || product.label}
                           className="w-full aspect-square object-cover"
                         />
@@ -197,25 +235,20 @@ export function AdminShopCatalog() {
                         className="font-thunder text-xl uppercase text-nolt-black group-hover:text-nolt-orange transition-colors leading-tight cursor-pointer"
                         onClick={() => setPopupProduct(product)}
                       >
-                        {product.label}
+                        {product.webLabel || product.label}
                       </h3>
-                      <p className="text-sm text-gray-500 mt-1 font-montserrat">{product.ref}</p>
-                      {product.description && (
-                        <p className="text-sm text-gray-600 mt-3 font-montserrat line-clamp-2">
-                          {product.description}
-                        </p>
-                      )}
-                      <div className="flex justify-between items-end mt-5">
-                        <p className="text-2xl font-thunder italic text-nolt-yellow">
-                          {typeof product.price === 'number' ? product.price.toFixed(2) : '—'}€
-                        </p>
-                        <button 
-                          onClick={() => setPopupProduct(product)}
-                          className="px-4 py-2 border border-gray-300 rounded-lg hover:border-nolt-yellow hover:text-nolt-yellow transition-colors font-montserrat"
-                        >
-                          Modifier
-                        </button>
+                      <p className="text-gray-500 text-xs mb-2">{product.ref}</p>
+                      <p className="text-gray-700 text-sm mb-2 line-clamp-2">{product.description}</p>
+                      <div className="flex items-center gap-2 mt-auto">
+                        <span className="font-thunder text-nolt-yellow text-lg">{product.price?.toFixed(2)}€</span>
+                        <span className="text-gray-400 text-xs">Stock: {product.stock}</span>
                       </div>
+                      <button
+                        className="mt-4 px-4 py-2 rounded-lg bg-nolt-orange text-white font-montserrat hover:bg-nolt-yellow hover:text-nolt-black transition-colors"
+                        onClick={() => setPopupProduct(product)}
+                      >
+                        Modifier
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -229,7 +262,7 @@ export function AdminShopCatalog() {
       {popupProduct && (
         <AdminProductDetailPopup
           product={popupProduct}
-          shopId={''}
+          shopId={shopId!}
           isOpen={true}
           onClose={() => setPopupProduct(null)}
         />

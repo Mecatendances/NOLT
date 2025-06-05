@@ -36,7 +36,7 @@ function getFieldsForProvider(provider: string) {
   }
 }
 
-export default function ShopIntegrations() {
+export function ShopIntegrations() {
   const { id: shopId } = useParams();
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

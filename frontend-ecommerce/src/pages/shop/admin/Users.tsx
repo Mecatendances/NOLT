@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { shopApi } from '../../../services/api';
 import { ShopRole } from '../../../types/shop';
 
-export default function ShopUsers() {
+export function ShopAdminUsers() {
   const { id: shopId } = useParams();
   const queryClient = useQueryClient();
   const [newUserEmail, setNewUserEmail] = useState('');

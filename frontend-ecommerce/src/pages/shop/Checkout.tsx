@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { ArrowLeft, CreditCard, Truck, Shield } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ export function Checkout() {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { shopId } = useParams();
 
   // Champs du formulaire
   const [customerName, setCustomerName] = React.useState('');
@@ -20,6 +21,11 @@ export function Checkout() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!shopId) {
+      alert("Erreur : Impossible de déterminer la boutique");
+      return;
+    }
 
     // Préparer le payload pour l'API
     const orderPayload = {
@@ -38,7 +44,10 @@ export function Checkout() {
 
     try {
       setIsSubmitting(true);
-      const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string,string> = { 
+        'Content-Type': 'application/json',
+        'x-tenant-id': shopId
+      };
       const token = localStorage.getItem('token');
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -55,8 +64,8 @@ export function Checkout() {
 
       const data = await res.json();
       alert(`Commande validée ! Numéro : ${data.id}`);
-    clearCart();
-    navigate('/public/shops');
+      clearCart();
+      navigate('/public/shops');
     } catch (err) {
       alert("Une erreur est survenue lors de la création de la commande. Veuillez réessayer.");
     } finally {

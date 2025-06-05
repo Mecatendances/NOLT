@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { api } from '../../services/api';
 
 interface OrderItem {
   id: string;
@@ -31,9 +32,8 @@ export function CampaignDetail() {
     queryKey: ['admin-campaign', id],
     enabled: !!id,
     queryFn: async () => {
-      const res = await fetch(`/api/campaigns/${id}`);
-      if (!res.ok) throw new Error('Erreur réseau');
-      return res.json();
+      const res = await api.get(`/campaigns/${id}`);
+      return res.data;
     }
   });
 
@@ -60,7 +60,7 @@ export function CampaignDetail() {
         </div>
       </section>
 
-      <section className="bg-white rounded-xl shadow-sm p-6">
+      <section>
         <h2 className="font-thunder text-xl mb-4 italic text-nolt-orange">Commandes</h2>
         <table className="min-w-full text-sm font-montserrat">
           <thead className="bg-gray-50 text-gray-700 uppercase text-xs">

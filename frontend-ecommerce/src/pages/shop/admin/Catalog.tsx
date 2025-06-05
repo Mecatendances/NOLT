@@ -12,7 +12,7 @@ interface DisplayCategory {
   count: number;
 }
 
-export default function Catalog() {
+export function Catalog() {
   const { id } = useParams();
   const [error, setError] = useState<string | null>(null);
   const [isLoadingCategory, setIsLoadingCategory] = useState(true);

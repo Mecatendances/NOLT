@@ -1,5 +1,6 @@
 import { Controller, Get, Query, Param, Put, Body, ParseUUIDPipe } from '@nestjs/common';
 import { CatalogService } from './catalog.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 // DTO pour le body de la requête de mise à jour du webLabel
 class UpdateWebLabelDto {
@@ -61,6 +62,7 @@ export class CatalogController {
   }
 
   /* Catégories */
+  @Public()
   @Get('categories')
   getCategories(@Query('parent') parent?: string) {
     return this.catalogService.getCategories(parent);
@@ -89,5 +91,11 @@ export class CatalogController {
         .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
         .map((img: any) => img.url),
     }));
+  }
+
+  @Get('shops/:shopId/categories')
+  async getCategoriesByShop(@Param('shopId') shopId: string) {
+    // Retourne toutes les catégories dont shopId = shopId
+    return this.catalogService.getCategoriesByShop(shopId);
   }
 } 

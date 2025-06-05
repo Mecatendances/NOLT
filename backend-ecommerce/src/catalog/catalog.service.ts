@@ -224,4 +224,8 @@ export class CatalogService {
   async findCategoryByDolibarrId(dolibarrId: number) {
     return this.categoryRepository.findOne({ where: { dolibarrId } });
   }
+
+  async getCategoriesByShop(shopId: string) {
+    return this.categoryRepository.find({ where: { shopId } });
+  }
 } 

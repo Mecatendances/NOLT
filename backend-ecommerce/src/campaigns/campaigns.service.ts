@@ -67,4 +67,44 @@ export class CampaignsService {
     campaign.totalTtc = total;
     await this.campaignRepository.save(campaign);
   }
+
+  /**
+   * Retourne les campagnes groupées par boutique, avec le nombre de commandes, le montant total et la liste des produits de chaque campagne
+   */
+  async findCampaignsByShop() {
+    // On récupère toutes les campagnes avec leurs commandes et produits
+    const campaigns = await this.campaignRepository.find({
+      relations: ['orders', 'orders.items', 'orders.items.product', 'shop'],
+      order: { createdAt: 'DESC' },
+    });
+    // On groupe par boutique
+    const grouped = {} as Record<string, any>;
+    for (const campaign of campaigns) {
+      const shopId = campaign.shopId;
+      if (!grouped[shopId]) {
+        grouped[shopId] = {
+          shop: campaign.shop,
+          campaigns: [],
+        };
+      }
+      grouped[shopId].campaigns.push({
+        id: campaign.id,
+        name: campaign.name,
+        status: campaign.status,
+        totalTtc: campaign.totalTtc,
+        createdAt: campaign.createdAt,
+        updatedAt: campaign.updatedAt,
+        ordersCount: campaign.orders.length,
+        orders: campaign.orders.map(order => ({
+          id: order.id,
+          totalTtc: order.totalTtc,
+          status: order.status,
+          createdAt: order.createdAt,
+          items: order.items,
+        })),
+        products: Array.from(new Set(campaign.orders.flatMap(order => order.items.map(item => item.product)))),
+      });
+    }
+    return Object.values(grouped);
+  }
 } 

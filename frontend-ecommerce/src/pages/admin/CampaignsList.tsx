@@ -4,6 +4,7 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 
 interface Campaign {
   id: string;
@@ -19,9 +20,8 @@ export function CampaignsList() {
   const { data, isLoading, error } = useQuery<Campaign[]>({
     queryKey: ['admin-campaigns'],
     queryFn: async () => {
-      const res = await fetch('/api/campaigns');
-      if (!res.ok) throw new Error('Erreur réseau');
-      return res.json();
+      const res = await api.get('/campaigns');
+      return res.data;
     }
   });
 

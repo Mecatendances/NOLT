@@ -45,9 +45,11 @@ export class UserShopRoleService {
   }
 
   async hasRole(userId: string, shopId: string, role: ShopRole): Promise<boolean> {
+    console.log(`[UserShopRoleService] Vérification du rôle : userId=${userId}, shopId=${shopId}, role=${role}`);
     const userShopRole = await this.userShopRoleRepository.findOne({
       where: { userId, shopId, role }
     });
+    console.log(`[UserShopRoleService] Résultat de la recherche :`, userShopRole);
     return !!userShopRole;
   }
 

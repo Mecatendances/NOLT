@@ -17,7 +17,7 @@ import { Login } from './pages/auth/Login';
 import { PublicShopsList } from './pages/shop/PublicShopsList';
 import { PublicShopView } from './pages/shop/PublicShopView';
 import { Checkout } from './pages/shop/Checkout';
-import { ShopsList } from './pages/shop/ShopsList';
+import { ShopsList } from './pages/admin/ShopsList';
 import { CreateShop } from './pages/shop/CreateShop';
 import { ShopDetails } from './pages/shop/ShopDetails';
 import { Dashboard } from './pages/admin/Dashboard';
@@ -30,21 +30,23 @@ import { CampaignDetail } from './pages/admin/CampaignDetail';
 import { Profile } from './pages/Profile';
 import { ShopProducts } from './pages/admin/ShopProducts';
 import { AdminShopCatalog } from './pages/admin/AdminShopCatalog';
-import AdminUsersList from './pages/admin/UsersList';
+import { AdminUsersList } from './pages/admin/UsersList';
 import { ShopDetails as AdminShopDetails } from './pages/admin/ShopDetails';
-import ShopRolesPage from './pages/admin/ShopRolesPage';
+import { ShopRolesPage } from './pages/admin/ShopRolesPage';
 import { MyAdminShops } from './components/shops/MyAdminShops';
-import ShopAdminDashboard from './pages/shop/admin/Dashboard';
-import ShopAdminOrders from './pages/shop/admin/Orders';
-import ShopAdminCampaigns from './pages/shop/admin/Campaigns';
-import ShopAdminUsers from './pages/shop/admin/Users';
-import Products from './pages/shop/admin/Products';
-import Register from './pages/Register';
-import EmailSettingsAdmin from './pages/admin/EmailSettings';
-import IntegrationsAdmin from './pages/admin/Integrations';
-import ShopIntegrations from './pages/shop/admin/Integrations';
-import ShopBrandingSettings from './pages/shop/admin/ShopBrandingSettings';
-import BrandingSettings from './pages/admin/BrandingSettings';
+import { ShopAdminDashboard } from './pages/shop/admin/Dashboard';
+import { ShopAdminOrders } from './pages/shop/admin/Orders';
+import { ShopAdminCampaigns } from './pages/shop/admin/Campaigns';
+import { ShopAdminUsers } from './pages/shop/admin/Users';
+import { Products } from './pages/shop/admin/Products';
+import { Register } from './pages/Register';
+import { EmailSettingsAdmin } from './pages/admin/EmailSettings';
+import { IntegrationsAdmin } from './pages/admin/Integrations';
+import { ShopIntegrations } from './pages/shop/admin/Integrations';
+import { ShopBrandingSettings } from './pages/shop/admin/ShopBrandingSettings';
+import { BrandingSettings } from './pages/admin/BrandingSettings';
+import { OrderDetails } from './pages/shop/admin/OrderDetails';
+import { CampaignsByShop } from './pages/admin/CampaignsByShop';
 
 const queryClient = new QueryClient();
 
@@ -86,18 +88,19 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/public/shops" element={<PublicShopsList />} />
               <Route path="/public/shops/:id" element={<PublicShopView />} />
-              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout/:shopId" element={<Checkout />} />
               
               {/* Routes d'administration */}
               <Route path="/admin" element={<RequireAuth requireAdmin={true}><AdminLayout /></RequireAuth>}>
                 <Route index element={<Dashboard />} />
-                <Route path="shops" element={<AdminShopCatalog />} />
+                <Route path="shops" element={<ShopsList />} />
                 <Route path="shops/new" element={<CreateShop />} />
-                <Route path="shops/:shopId/products" element={<ShopProducts />} />
+                <Route path="shops/:shopId/products" element={<AdminShopCatalog />} />
                 <Route path="pages" element={<Pages />} />
                 <Route path="orders" element={<OrdersList />} />
                 <Route path="orders/:id" element={<OrderDetail />} />
                 <Route path="campaigns" element={<CampaignsList />} />
+                <Route path="campaigns/by-shop" element={<CampaignsByShop />} />
                 <Route path="campaigns/:id" element={<CampaignDetail />} />
                 <Route path="pages/new" element={<PageEditor />} />
                 <Route path="pages/:id/edit" element={<PageEditor isEditing />} />
@@ -118,6 +121,7 @@ function App() {
                 <Route path="products" element={<Products />} />
                 <Route path="integrations" element={<ShopIntegrations />} />
                 <Route path="branding" element={<ShopBrandingSettings />} />
+                <Route path="orders/:id" element={<OrderDetails />} />
               </Route>
               <Route path="/shops/:id" element={<RequireAuth><ShopDetails /></RequireAuth>} />
               <Route path="/create-shop" element={<RequireAuth requireAdmin={true}><CreateShop /></RequireAuth>} />

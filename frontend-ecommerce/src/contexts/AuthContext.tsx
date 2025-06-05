@@ -5,6 +5,7 @@ import { GlobalRole } from '../types/userRole';
 import { api } from '../services/api';
 
 interface AuthContextType extends AuthState {
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hasRole: (...allowed: GlobalRole[]) => boolean;
@@ -14,10 +15,11 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
+  const [state, setState] = useState<AuthState & { token: string | null }>({
     user: null,
     isAuthenticated: false,
-    isLoading: true
+    isLoading: true,
+    token: null,
   });
 
   const navigate = useNavigate();
@@ -59,11 +61,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           licenseeShops: payload.licenseeShops,
           isAdmin: [GlobalRole.ADMIN, GlobalRole.SUPERADMIN].includes(payload.role)
         };
-        setState({ user, isAuthenticated: true, isLoading: false });
+        setState({ user, isAuthenticated: true, isLoading: false, token });
         return;
       }
     }
-    setState(prev => ({ ...prev, isLoading: false }));
+    setState(prev => ({ ...prev, isLoading: false, token: null }));
   }, []);
 
   /* -----------------------------------------
@@ -88,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       localStorage.setItem('user', JSON.stringify(user));
-      setState({ user, isAuthenticated: true, isLoading: false });
+      setState({ user, isAuthenticated: true, isLoading: false, token: accessToken });
 
       // Redirection selon le rôle
       if (user.role === GlobalRole.SUPERADMIN) {
@@ -98,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       console.error('Erreur de connexion', error);
-      setState({ user: null, isAuthenticated: false, isLoading: false });
+      setState({ user: null, isAuthenticated: false, isLoading: false, token: null });
       throw error;
     }
   };
@@ -106,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setState({ user: null, isAuthenticated: false, isLoading: false });
+    setState({ user: null, isAuthenticated: false, isLoading: false, token: null });
     navigate('/login');
   };
 
@@ -118,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = () => hasRole(GlobalRole.SUPERADMIN, GlobalRole.ADMIN);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, hasRole, isAdmin }}>
+    <AuthContext.Provider value={{ ...state, token: state.token, login, logout, hasRole, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

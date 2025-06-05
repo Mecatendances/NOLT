@@ -23,6 +23,9 @@ import { IntegrationSettingsController } from './mailer/integration-settings.con
 import { BrandingSettings } from './mailer/branding-settings.entity';
 import { BrandingSettingsController } from './mailer/branding-settings.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_GUARD, Reflector } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { AuthService } from './auth/auth.service';
 
 @Module({
   imports: [
@@ -53,7 +56,19 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     IntegrationSettingsController,
     BrandingSettingsController,
   ],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useFactory: (authService: AuthService, reflector: Reflector) => {
+        return new JwtAuthGuard(authService, reflector);
+      },
+      inject: [
+        AuthService,
+        Reflector,
+      ],
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

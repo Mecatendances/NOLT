@@ -50,7 +50,7 @@ interface BrandingSettings {
   };
 }
 
-const ShopBrandingSettings: React.FC = () => {
+export function ShopBrandingSettings() {
   const { id: shopId } = useParams<{ id: string }>();
   const { user } = useAuth();
   const [settings, setSettings] = useState<BrandingSettings>({
@@ -639,6 +639,4 @@ const ShopBrandingSettings: React.FC = () => {
       </Dialog>
     </Box>
   );
-};
-
-export default ShopBrandingSettings; 
+} 

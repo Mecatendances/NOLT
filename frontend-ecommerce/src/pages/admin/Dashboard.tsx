@@ -13,10 +13,12 @@ import {
 } from 'lucide-react';
 import type { Product } from '../../types/shop';
 import { Shop } from '../../types/shop';
+import { useBranding } from '../../hooks/useBranding';
 
 export function Dashboard() {
   const [selectedShop, setSelectedShop] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const { branding } = useBranding();
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['adminStats'],
@@ -67,11 +69,40 @@ export function Dashboard() {
   ];
 
   return (
-    <div className="space-y-8 p-6">
+    <div
+      className="space-y-8 p-6"
+      style={{
+        background: branding?.dashboardCoverImage
+          ? `url(${branding.dashboardCoverImage}) center/cover no-repeat`
+          : undefined,
+        minHeight: '100vh',
+      }}
+    >
       {/* En-tête */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>Tableau de bord</h1>
+        <h1
+          className="text-3xl font-thunder"
+          style={{
+            color: branding?.secondaryColor || 'var(--brand-secondary, #FFD600)',
+            textShadow: branding?.dashboardCoverImage ? '0 2px 8px #0008' : undefined,
+          }}
+        >
+          {branding?.dashboardTitle || 'Tableau de bord'}
+        </h1>
       </div>
+      {branding?.dashboardSlogan && (
+        <div className="mb-6">
+          <p
+            className="text-xl font-montserrat italic"
+            style={{
+              color: branding?.primaryColor || '#222',
+              textShadow: branding?.dashboardCoverImage ? '0 2px 8px #0008' : undefined,
+            }}
+          >
+            {branding.dashboardSlogan}
+          </p>
+        </div>
+      )}
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

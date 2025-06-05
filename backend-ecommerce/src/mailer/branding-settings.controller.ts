@@ -26,11 +26,11 @@ export class BrandingSettingsController {
 
   @Get()
   @Roles(GlobalRole.SUPERADMIN)
-  async getAll(@Query('shopId') shopId?: string) {
+  async getOneByShop(@Query('shopId') shopId?: string) {
     if (shopId) {
-      return this.brandingSettingsRepository.find({ where: { shopId } });
+      return this.brandingSettingsRepository.findOne({ where: { shopId } });
     }
-    return this.brandingSettingsRepository.find({ where: { shopId: null } });
+    return this.brandingSettingsRepository.findOne({ where: { shopId: null } });
   }
 
   @Get(':id')

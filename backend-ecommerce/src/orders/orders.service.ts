@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { OrderEntity } from './order.entity';
+import { OrderEntity, OrderStatus } from './order.entity';
 import { OrderItemEntity } from './order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ProductEntity } from '../catalog/entities/product.entity';
@@ -64,13 +64,17 @@ export class OrdersService {
       user,
       totalTtc: total,
       items,
+      shopId: dto.shopId,
     });
 
     return this.orderRepository.save(order);
   }
 
   async findAll(): Promise<OrderEntity[]> {
-    return this.orderRepository.find({ order: { createdAt: 'DESC' } });
+    return this.orderRepository.find({
+      order: { createdAt: 'DESC' },
+      relations: ['user', 'items', 'shop'],
+    });
   }
 
   async findOne(id: string): Promise<OrderEntity | null> {
@@ -92,5 +96,23 @@ export class OrdersService {
       order: { createdAt: 'DESC' },
       relations: ['user', 'items', 'shop'],
     });
+  }
+
+  async assignCampaign(orderId: string, campaignId: string | null): Promise<OrderEntity | null> {
+    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    if (!order) return null;
+    if (campaignId) {
+      order.campaign = { id: campaignId } as any;
+    } else {
+      order.campaign = null;
+    }
+    return this.orderRepository.save(order);
+  }
+
+  async updateStatus(id: string, status: OrderStatus): Promise<OrderEntity | null> {
+    const order = await this.orderRepository.findOne({ where: { id } });
+    if (!order) return null;
+    order.status = status;
+    return this.orderRepository.save(order);
   }
 } 

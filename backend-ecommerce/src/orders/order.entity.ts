@@ -4,6 +4,8 @@ import { UserEntity } from '../users/entities/user.entity';
 import { CampaignEntity } from '../campaigns/campaign.entity';
 import { Shop } from '../shops/entities/shop.entity';
 
+export type OrderStatus = 'PENDING' | 'PAID' | 'SENT' | 'CANCELLED';
+
 @Entity('orders')
 export class OrderEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -26,7 +28,7 @@ export class OrderEntity {
   totalTtc: number;
 
   @Column({ default: 'PENDING' })
-  status: 'PENDING' | 'PAID' | 'SENT' | 'CANCELLED';
+  status: OrderStatus;
 
   @Column({ nullable: true })
   dolibarrId?: string;

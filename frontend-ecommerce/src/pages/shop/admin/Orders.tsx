@@ -1,117 +1,166 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, AlertTriangle } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { orderApi } from '../../../services/api';
 
 interface OrderItem {
   id: number;
-  size: string;
-  quantity: number;
-  unitPriceTtc: number;
   product: {
     id: string;
-    label: string;
+    name: string;
   };
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
+  quantity: number;
+  size: string;
+  unitPriceTtc: number;
 }
 
 interface Order {
   id: string;
-  user: User;
-  totalTtc: string | number;
-  status: string;
-  createdAt: string;
+  user: {
+    id: string;
+    email: string;
+  };
   items: OrderItem[];
+  totalTtc: number;
+  status: 'PENDING' | 'PAID' | 'SENT' | 'CANCELLED';
+  createdAt: string;
+  campaign?: {
+    id: string;
+    name: string;
+  };
 }
 
-export default function ShopAdminOrders() {
-  const { id } = useParams();
+export function ShopAdminOrders() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const queryClient = useQueryClient();
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
-  const { data, isLoading, error } = useQuery<Order[]>({
-    queryKey: ['shop-orders', id],
-    queryFn: async () => {
-      const res = await fetch(`/api/orders/shop/${id}`);
-      if (!res.ok) throw new Error('Erreur réseau');
-      return res.json();
-    },
+  const { data: orders, isLoading, error } = useQuery<Order[]>({
+    queryKey: ['orders', id],
+    queryFn: () => orderApi.getOrders(id!),
     enabled: !!id
   });
 
-  const toggleSelect = (orderId: string) => {
-    setSelectedIds(prev => prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]);
+  const assignCampaignMutation = useMutation({
+    mutationFn: ({ orderId, campaignId }: { orderId: string; campaignId: string | null }) =>
+      orderApi.assignCampaign(orderId, campaignId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders', id] });
+      setSelectedOrders([]);
+    },
+  });
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders(prev =>
+      prev.includes(orderId)
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  const handleAssignCampaign = (campaignId: string | null) => {
+    selectedOrders.forEach(orderId => {
+      assignCampaignMutation.mutate({ orderId, campaignId });
+    });
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-gray-500">
-        <Loader2 className="animate-spin" /> Chargement des commandes...
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 text-nolt-blue animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 text-red-600">
-        <AlertTriangle /> Impossible de récupérer les commandes
+      <div className="flex items-center justify-center h-64">
+        <div className="text-red-600 flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          Une erreur est survenue lors du chargement des commandes.
+        </div>
       </div>
     );
   }
 
+  const getStatusColor = (status: Order['status']) => {
+    switch (status) {
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+      case 'PAID': return 'bg-green-100 text-green-800';
+      case 'SENT': return 'bg-blue-100 text-blue-800';
+      case 'CANCELLED': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: Order['status']) => {
+    switch (status) {
+      case 'PENDING': return 'En attente';
+      case 'PAID': return 'Payée';
+      case 'SENT': return 'Expédiée';
+      case 'CANCELLED': return 'Annulée';
+      default: return status;
+    }
+  };
+
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-thunder text-nolt-black mb-6">Commandes de la boutique</h1>
       <div className="overflow-x-auto bg-white shadow-sm rounded-xl">
-        <table className="min-w-full text-sm font-montserrat">
-          <thead className="bg-gray-50 text-gray-700 uppercase text-xs">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead>
             <tr>
-              <th className="px-2"></th>
-              <th className="px-4 py-3 text-left">ID</th>
-              <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Client</th>
-              <th className="px-4 py-3 text-left">Total</th>
-              <th className="px-4 py-3 text-left">Statut</th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Client
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Statut
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Campagne
+              </th>
             </tr>
           </thead>
-          <tbody>
-            {data && data.map(order => (
-              <tr
-                key={order.id}
-                className="border-b last:border-none hover:bg-gray-50 cursor-pointer"
+          <tbody className="bg-white divide-y divide-gray-200">
+            {orders?.map((order) => (
+              <tr 
+                key={order.id} 
+                className="hover:bg-gray-50 cursor-pointer"
                 onClick={() => navigate(`/shops/${id}/admin/orders/${order.id}`)}
               >
-                <td className="px-2 text-center" onClick={e=>{e.stopPropagation();toggleSelect(order.id);}}>
-                  <input type="checkbox" checked={selectedIds.includes(order.id)} onChange={()=>toggleSelect(order.id)} />
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  #{order.id.slice(0, 8)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap font-medium text-nolt-orange">{order.id.substring(0, 8)}…</td>
-                <td className="px-4 py-3">{format(new Date(order.createdAt), 'dd MMM yyyy', { locale: fr })}</td>
-                <td className="px-4 py-3">{order.user?.name ?? '—'}</td>
-                <td className="px-4 py-3">{Number(order.totalTtc).toFixed(2)} €</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-md text-xs font-semibold 
-                    ${order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : ''}
-                    ${order.status === 'PAID' ? 'bg-green-100 text-green-800' : ''}
-                    ${order.status === 'SENT' ? 'bg-blue-100 text-blue-800' : ''}
-                    ${order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' : ''}`}
-                  >
-                    {order.status}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(order.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {order.user.email}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {order.totalTtc.toFixed(2)} €
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
+                    {getStatusLabel(order.status)}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {order.campaign?.name || '-'}
                 </td>
               </tr>
             ))}
-            {data && data.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">Aucune commande pour le moment</td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>

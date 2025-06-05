@@ -14,7 +14,7 @@ import {
 import type { Product } from '../../../types/shop';
 import { Switch, FormControlLabel, Snackbar, Alert } from '@mui/material';
 
-export default function ShopAdminDashboard() {
+export function ShopAdminDashboard() {
   const { id } = useParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);

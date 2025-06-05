@@ -6,7 +6,7 @@ const PROVIDERS = [
   { value: 'brevo', label: 'Brevo (Sendinblue)' },
 ];
 
-export default function EmailSettingsAdmin() {
+export function EmailSettingsAdmin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

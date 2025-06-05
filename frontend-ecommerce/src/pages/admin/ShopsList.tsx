@@ -1,6 +1,6 @@
 // Fichier minimal pour permettre au routing de fonctionner
-import React, { useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Store, 
@@ -17,10 +17,12 @@ import { shopApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Shop } from '../../types/shop';
 import { GlobalRole } from '../../types/userRole';
+import { AdminShopCatalog } from './AdminShopCatalog';
 
 export function ShopsList() {
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
+  const { shopId } = useParams<{ shopId: string }>();
 
   const { data: shops = [], isLoading } = useQuery<Shop[]>({
     queryKey: ['shops'],
@@ -48,6 +50,11 @@ export function ShopsList() {
     );
   }
 
+  // Si une boutique est sélectionnée, afficher son catalogue de produits
+  if (shopId) {
+    return <AdminShopCatalog />;
+  }
+
   // Superadmin : liste des boutiques
   if (hasRole(GlobalRole.SUPERADMIN)) {
     return (
@@ -69,6 +76,7 @@ export function ShopsList() {
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+                {/* TODO: Afficher le vrai nombre de produits et de commandes via une stat backend (optimisé) */}
                 <div className="flex items-center gap-2">
                   <span>📦</span>
                   <span>{shop.products?.length || 0} produits</span>
@@ -79,12 +87,12 @@ export function ShopsList() {
                 </div>
               </div>
               <div className="mt-6 flex justify-end">
-                <Link
-                  to={`/admin/shops/${shop.id}`}
+                <button
+                  onClick={() => navigate(`/admin/shops/${shop.id}/products`)}
                   className="inline-flex items-center gap-2 rounded-lg bg-nolt-yellow px-4 py-2 font-semibold text-nolt-black hover:bg-nolt-orange hover:text-white transition-all"
                 >
-                  👁️ Accéder à l'administration
-                </Link>
+                  👁️ Voir le catalogue
+                </button>
               </div>
             </div>
           ))}
