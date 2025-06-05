@@ -13,12 +13,12 @@ export class BrandingSettings {
   @JoinColumn({ name: 'shop_id' })
   shop: Shop;
 
-  @Column({ nullable: true }) logoUrl: string;
-  @Column({ nullable: true }) faviconUrl: string;
+  @Column({ nullable: true }) logo: string;
+  @Column({ nullable: true }) favicon: string;
+  @Column({ nullable: true }) coverImage: string;
   @Column({ nullable: true }) mainColor: string;
   @Column({ nullable: true }) name: string;
   @Column({ nullable: true }) description: string;
-  @Column({ nullable: true }) coverImageUrl: string;
   @Column({ nullable: true }) footerText: string;
   @Column({ nullable: true }) contactEmail: string;
   @Column({ nullable: true }) facebookUrl: string;
@@ -33,5 +33,11 @@ export class BrandingSettings {
   @Column({ nullable: true }) dashboardTitle: string;
   @Column({ nullable: true }) dashboardSlogan: string;
   @Column({ nullable: true }) dashboardCoverImage: string;
+  // Champs pour la personnalisation de la TopBar
+  @Column({ nullable: true }) topbarBgColor: string;
+  @Column({ nullable: true }) topbarTextColor: string;
+  @Column({ nullable: true }) topbarButtonText: string;
+  @Column({ nullable: true }) topbarButtonUrl: string;
+  @Column({ nullable: true }) topbarShowAdminButton: boolean;
   // Ajoute d'autres champs si besoin
 } 

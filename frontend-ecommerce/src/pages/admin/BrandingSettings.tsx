@@ -28,6 +28,7 @@ import TwitterIcon from '@mui/icons-material/Twitter';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import axios from 'axios';
+import { getImageUrl } from '../../utils/getImageUrl';
 
 interface BrandingSettings {
   name: string;
@@ -131,7 +132,7 @@ export function BrandingSettings() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post('/api/admin/upload', formData, {
+      const response = await axios.post(`/api/admin/branding/upload/${field}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -212,7 +213,7 @@ export function BrandingSettings() {
                     </Tooltip>
                   </Typography>
                   <Box display="flex" alignItems="center" gap={2}>
-                    {settings.logo && <img src={settings.logo} alt="Logo" style={{ height: 60, marginRight: 16 }} />}
+                    {settings.logo && <img src={getImageUrl(settings.logo)} alt="Logo" style={{ height: 60, marginRight: 16 }} />}
                     <Box>
                       <Typography variant="h4" fontWeight="bold">{settings.landingTitle || 'Les Boutiques NOLT'}</Typography>
                       <Typography variant="subtitle1">{settings.landingSlogan || 'Un concept unique pour tous les clubs et communautés'}</Typography>
@@ -220,7 +221,7 @@ export function BrandingSettings() {
                   </Box>
                   {settings.landingCoverImage && (
                     <Box mt={2}>
-                      <img src={settings.landingCoverImage} alt="Image de fond landing" style={{ width: '100%', maxHeight: 120, objectFit: 'cover', borderRadius: 8 }} />
+                      <img src={getImageUrl(settings.landingCoverImage)} alt="Image de fond landing" style={{ width: '100%', maxHeight: 120, objectFit: 'cover', borderRadius: 8 }} />
                     </Box>
                   )}
                 </CardContent>
@@ -238,7 +239,7 @@ export function BrandingSettings() {
                     </Tooltip>
                   </Typography>
                   <Box display="flex" alignItems="center" gap={2}>
-                    {settings.logo && <img src={settings.logo} alt="Logo" style={{ height: 40, marginRight: 16 }} />}
+                    {settings.logo && <img src={getImageUrl(settings.logo)} alt="Logo" style={{ height: 40, marginRight: 16 }} />}
                     <Box>
                       <Typography variant="h4" fontWeight="bold">{settings.dashboardTitle || 'Tableau de bord'}</Typography>
                       <Typography variant="subtitle1">{settings.dashboardSlogan || 'Gérez vos boutiques et campagnes'}</Typography>
@@ -246,7 +247,7 @@ export function BrandingSettings() {
                   </Box>
                   {settings.dashboardCoverImage && (
                     <Box mt={2}>
-                      <img src={settings.dashboardCoverImage} alt="Image de fond dashboard" style={{ width: '100%', maxHeight: 80, objectFit: 'cover', borderRadius: 8 }} />
+                      <img src={getImageUrl(settings.dashboardCoverImage)} alt="Image de fond dashboard" style={{ width: '100%', maxHeight: 80, objectFit: 'cover', borderRadius: 8 }} />
                     </Box>
                   )}
                 </CardContent>
@@ -339,7 +340,7 @@ export function BrandingSettings() {
                       </Typography>
                       {settings.landingCoverImage && (
                         <Box mb={2}>
-                          <img src={settings.landingCoverImage} alt="Cover" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: 8 }} />
+                          <img src={getImageUrl(settings.landingCoverImage)} alt="Cover" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: 8 }} />
                         </Box>
                       )}
                       <input
@@ -405,7 +406,7 @@ export function BrandingSettings() {
                       </Typography>
                       {settings.dashboardCoverImage && (
                         <Box mb={2}>
-                          <img src={settings.dashboardCoverImage} alt="Cover" style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'cover', borderRadius: 8 }} />
+                          <img src={getImageUrl(settings.dashboardCoverImage)} alt="Cover" style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'cover', borderRadius: 8 }} />
                         </Box>
                       )}
                       <input
@@ -520,7 +521,7 @@ export function BrandingSettings() {
                       </Typography>
                       {settings.logo && (
                         <Box mb={2}>
-                          <img src={settings.logo} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'contain' }} />
+                          <img src={getImageUrl(settings.logo)} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'contain' }} />
                         </Box>
                       )}
                       <input
@@ -549,7 +550,7 @@ export function BrandingSettings() {
                       </Typography>
                       {settings.favicon && (
                         <Box mb={2}>
-                          <img src={settings.favicon} alt="Favicon" style={{ maxWidth: '32px', maxHeight: '32px' }} />
+                          <img src={getImageUrl(settings.favicon)} alt="Favicon" style={{ maxWidth: '32px', maxHeight: '32px' }} />
                         </Box>
                       )}
                       <input
@@ -578,7 +579,7 @@ export function BrandingSettings() {
                       </Typography>
                       {settings.coverImage && (
                         <Box mb={2}>
-                          <img src={settings.coverImage} alt="Cover" style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'cover', borderRadius: 8 }} />
+                          <img src={getImageUrl(settings.coverImage)} alt="Cover" style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'cover', borderRadius: 8 }} />
                         </Box>
                       )}
                       <input

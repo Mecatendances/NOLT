@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useBranding } from '../hooks/useBranding';
+import { getImageUrl } from '../utils/getImageUrl';
 
 interface FooterProps {
   shopId?: string;

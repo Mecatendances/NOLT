@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { UserCircle, ChevronDown, LogOut, LayoutDashboard } from 'lucide-react';
 import { GlobalRole, ShopRole } from '../types/userRole';
 import { useBranding } from '../hooks/useBranding';
+import { getImageUrl } from '../utils/getImageUrl';
 
 export function TopBar() {
   const { isAuthenticated, user, logout, hasRole, hasShopRole } = useAuth();
@@ -20,7 +21,7 @@ export function TopBar() {
     >
       <Link to="/home" className="flex items-center gap-2 text-lg font-thunder text-nolt-orange hover:text-nolt-yellow transition-colors">
         {branding?.logo ? (
-          <img src={branding.logo} alt={branding.name || 'Logo'} className="h-10 w-auto max-w-[120px] object-contain" style={{ maxHeight: 40 }} />
+          <img src={getImageUrl(branding.logo)} alt={branding.name || 'Logo'} className="h-10 w-auto max-w-[120px] object-contain" style={{ maxHeight: 40 }} />
         ) : (
           branding?.name || 'FC CHALON'
         )}

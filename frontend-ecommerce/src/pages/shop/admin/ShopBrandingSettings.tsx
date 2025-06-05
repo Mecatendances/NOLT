@@ -31,6 +31,7 @@ import {
 import { ChromePicker } from 'react-color';
 import { useAuth } from '../../../contexts/AuthContext';
 import { adminApi } from '../../../services/api';
+import { getImageUrl } from '../../../utils/getImageUrl';
 
 interface BrandingSettings {
   name: string;
@@ -227,7 +228,7 @@ export function ShopBrandingSettings() {
                       <Typography variant="subtitle1" gutterBottom>Logo</Typography>
                       {settings.logo && (
                         <Box mb={1} position="relative">
-                          <img src={settings.logo} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100px' }} />
+                          <img src={getImageUrl(settings.logo)} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100px' }} />
                           <IconButton
                             size="small"
                             onClick={() => handleDeleteImage('logo')}
@@ -257,7 +258,7 @@ export function ShopBrandingSettings() {
                       <Typography variant="subtitle1" gutterBottom>Favicon</Typography>
                       {settings.favicon && (
                         <Box mb={1} position="relative">
-                          <img src={settings.favicon} alt="Favicon" style={{ maxWidth: '100%', maxHeight: '32px' }} />
+                          <img src={getImageUrl(settings.favicon)} alt="Favicon" style={{ maxWidth: '32px', maxHeight: '32px' }} />
                           <IconButton
                             size="small"
                             onClick={() => handleDeleteImage('favicon')}
@@ -286,15 +287,8 @@ export function ShopBrandingSettings() {
                     <Box textAlign="center">
                       <Typography variant="subtitle1" gutterBottom>Image de couverture</Typography>
                       {settings.coverImage && (
-                        <Box mb={1} position="relative">
-                          <img src={settings.coverImage} alt="Cover" style={{ maxWidth: '100%', maxHeight: '100px' }} />
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteImage('coverImage')}
-                            sx={{ position: 'absolute', top: 0, right: 0 }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
+                        <Box mb={2}>
+                          <img src={getImageUrl(settings.coverImage)} alt="Cover" style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'cover', borderRadius: 8 }} />
                         </Box>
                       )}
                       <input
@@ -599,7 +593,7 @@ export function ShopBrandingSettings() {
             </Typography>
             {settings.logo && (
               <Box mb={2}>
-                <img src={settings.logo} alt="Logo" style={{ maxHeight: '100px' }} />
+                <img src={getImageUrl(settings.logo)} alt="Logo" style={{ maxHeight: '100px' }} />
               </Box>
             )}
             <Typography variant="body1" paragraph>

@@ -12,6 +12,7 @@ export function PublicShopsList() {
     queryFn: shopApi.getPublicShops,
   });
   const { branding } = useBranding();
+  console.log('Branding data:', branding);
 
   console.log('État des boutiques:', { shops, isLoading, error });
 
