@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, UseGuards, Request, Patch, UnauthorizedException, Logger, Headers } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, UseGuards, Request, Patch, UnauthorizedException, Logger, Headers, NotFoundException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -111,10 +111,12 @@ export class OrdersController {
     this.logger.debug(`Détails de commande - userId: ${userId}, shopId: ${shopId}, orderId: ${id}`);
     
     if (!shopId) {
+      this.logger.error('x-tenant-id manquant dans les headers');
       throw new UnauthorizedException('x-tenant-id est requis');
     }
     
     if (!userId) {
+      this.logger.error('Utilisateur non authentifié');
       throw new UnauthorizedException('Utilisateur non authentifié');
     }
 
@@ -123,10 +125,25 @@ export class OrdersController {
     this.logger.debug(`Rôles trouvés pour l'utilisateur: ${JSON.stringify(userShopRoles)}`);
     
     if (!userShopRoles.length) {
+      this.logger.error(`L'utilisateur ${userId} n'a pas accès à la boutique ${shopId}`);
       throw new UnauthorizedException('Vous n\'avez pas accès à cette boutique');
     }
 
-    return this.ordersService.findOne(id);
+    const order = await this.ordersService.findOne(id);
+    this.logger.debug(`Commande trouvée: ${JSON.stringify(order)}`);
+    
+    if (!order) {
+      this.logger.error(`Commande ${id} non trouvée`);
+      throw new NotFoundException('Commande non trouvée');
+    }
+
+    // Vérifier que la commande appartient à la bonne boutique
+    if (order.shopId !== shopId) {
+      this.logger.error(`La commande ${id} n'appartient pas à la boutique ${shopId}`);
+      throw new UnauthorizedException('Cette commande n\'appartient pas à cette boutique');
+    }
+
+    return order;
   }
 
   @Patch(':id/status')

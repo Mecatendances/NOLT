@@ -204,67 +204,6 @@ export function ShopAdminDashboard() {
           </Link>
         ))}
       </div>
-
-      {/* Produits de la boutique */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-thunder" style={{color: 'var(--brand-secondary, #FFD600)'}}>Produits de la boutique</h2>
-        </div>
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Rechercher un produit..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full p-2 pl-10 border rounded-lg font-montserrat"
-              />
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-          {isLoadingProducts ? (
-            <div className="space-y-4">
-              {Array(3).fill(0).map((_, i) => (
-                <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
-                  <div className="w-16 h-16 bg-gray-200 rounded"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <p className="text-gray-500 text-center py-8 font-montserrat">
-              Aucun produit trouvé
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {filteredProducts.map((product) => (
-                <div key={product.id} className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.label}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-thunder text-lg" style={{color: 'var(--brand-primary, #222)'}}>{product.label}</h3>
-                    <p className="text-gray-500 font-montserrat">{product.ref}</p>
-                  </div>
-                  <div className="font-thunder text-xl" style={{color: 'var(--brand-secondary, #FFD600)'}}>{product.price?.toFixed(2)}€</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 } 

@@ -10,6 +10,8 @@ interface OrderItem {
     id: string;
     name: string;
     imageUrl?: string;
+    images?: { url: string }[];
+    label?: string;
   };
   quantity: number;
   size: string;
@@ -37,13 +39,37 @@ interface Order {
 }
 
 export function OrderDetails() {
-  const { id } = useParams<{ id: string }>();
+  const { id: shopId, orderId } = useParams<{ id: string; orderId: string }>();
   const navigate = useNavigate();
 
+  console.log('OrderDetails - Paramètres reçus:', { orderId, shopId });
+
   const { data: order, isLoading, error } = useQuery<Order>({
-    queryKey: ['order', id],
-    queryFn: () => orderApi.getOrder(id!),
-    enabled: !!id
+    queryKey: ['order', orderId, shopId],
+    queryFn: async () => {
+      if (!orderId || !shopId) {
+        console.error('orderId ou shopId manquant:', { orderId, shopId });
+        throw new Error('orderId ou shopId manquant');
+      }
+      console.log('Tentative de récupération de la commande:', { orderId, shopId });
+      try {
+        const result = await orderApi.getOrder(orderId, shopId);
+        console.log('Commande reçue du backend:', result);
+        if (!result) {
+          throw new Error('Aucune donnée reçue du serveur');
+        }
+        return result;
+      } catch (error: any) {
+        console.error('Erreur lors de la récupération de la commande:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        throw error;
+      }
+    },
+    enabled: !!orderId && !!shopId,
+    retry: 1
   });
 
   if (isLoading) {
@@ -57,15 +83,48 @@ export function OrderDetails() {
     );
   }
 
-  if (error || !order) {
+  if (error) {
+    console.error('Erreur lors du chargement de la commande:', error);
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          Une erreur est survenue lors du chargement de la commande.
+          <p className="font-bold">Une erreur est survenue lors du chargement de la commande.</p>
+          <p className="mt-2 text-sm">
+            {error instanceof Error ? error.message : 'Erreur inconnue'}
+          </p>
+          <button 
+            onClick={() => navigate(-1)}
+            className="mt-4 px-4 py-2 bg-red-100 hover:bg-red-200 rounded"
+          >
+            Retour
+          </button>
         </div>
       </div>
     );
   }
+
+  if (!order) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          <p className="font-bold">Commande non trouvée.</p>
+          <p className="mt-2 text-sm">
+            ID de la commande: {orderId}
+            <br />
+            ID de la boutique: {shopId}
+          </p>
+          <button 
+            onClick={() => navigate(-1)}
+            className="mt-4 px-4 py-2 bg-yellow-100 hover:bg-yellow-200 rounded"
+          >
+            Retour
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Rendu de la commande:', order);
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
@@ -180,15 +239,15 @@ export function OrderDetails() {
                   <tr key={item.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        {item.product.imageUrl && (
+                        {item.product.images && item.product.images.length > 0 && (
                           <img
-                            src={item.product.imageUrl}
-                            alt={item.product.name}
+                            src={item.product.images[0].url}
+                            alt={item.product.label}
                             className="w-10 h-10 rounded object-cover mr-3"
                           />
                         )}
                         <div className="text-sm font-medium text-gray-900">
-                          {item.product.name}
+                          {item.product.label}
                         </div>
                       </div>
                     </td>
@@ -199,10 +258,10 @@ export function OrderDetails() {
                       {item.quantity}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.unitPriceTtc.toFixed(2)} €
+                      {Number(item.unitPriceTtc ?? 0).toFixed(2)} €
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {(item.unitPriceTtc * item.quantity).toFixed(2)} €
+                      {(Number(item.unitPriceTtc ?? 0) * item.quantity).toFixed(2)} €
                     </td>
                   </tr>
                 ))}
@@ -213,11 +272,17 @@ export function OrderDetails() {
                     Total
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.totalTtc.toFixed(2)} €
+                    {Number(order.totalTtc ?? 0).toFixed(2)} €
                   </td>
                 </tr>
               </tfoot>
             </table>
+          </div>
+        </div>
+
+        <div className="flex justify-end items-center p-6 border-t border-gray-200">
+          <div className="text-lg font-semibold text-gray-900">
+            Total TTC : {typeof order.totalTtc === 'number' ? order.totalTtc.toFixed(2) : '0.00'} €
           </div>
         </div>
       </div>

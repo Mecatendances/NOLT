@@ -24,6 +24,11 @@ export class CatalogController {
       images: (p.images || [])
         .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
         .map((img: any) => img.url),
+      categories: Array.isArray(p.categories)
+        ? p.categories
+            .filter(cat => cat.category)
+            .map(cat => ({ id: cat.category.id, label: cat.category.label }))
+        : [],
     }));
   }
 

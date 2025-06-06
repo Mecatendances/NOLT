@@ -42,4 +42,30 @@ export class Shop {
 
   @OneToMany(() => CategoryEntity, category => category.shop)
   categories: CategoryEntity[];
+
+  @Column({ nullable: true })
+  logo: string;
+
+  @Column({ nullable: true })
+  coverImage: string;
+
+  @Column({ nullable: true, default: '#0E214A' })
+  primaryColor: string;
+
+  @Column({ nullable: true, default: '#FFD600' })
+  secondaryColor: string;
+
+  @Column('jsonb', { nullable: true, default: {} })
+  socialLinks: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+    linkedin?: string;
+  };
+
+  @Column({ nullable: true })
+  footerText: string;
+
+  @Column({ nullable: true })
+  contactEmail: string;
 } 

@@ -121,7 +121,7 @@ function App() {
                 <Route path="products" element={<Products />} />
                 <Route path="integrations" element={<ShopIntegrations />} />
                 <Route path="branding" element={<ShopBrandingSettings />} />
-                <Route path="orders/:id" element={<OrderDetails />} />
+                <Route path="orders/:orderId" element={<OrderDetails />} />
               </Route>
               <Route path="/shops/:id" element={<RequireAuth><ShopDetails /></RequireAuth>} />
               <Route path="/create-shop" element={<RequireAuth requireAdmin={true}><CreateShop /></RequireAuth>} />

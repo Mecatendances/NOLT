@@ -6,45 +6,20 @@ import { campaignApi } from '../../../services/api';
 export function ShopAdminCampaigns() {
   const { id: shopId } = useParams();
   const queryClient = useQueryClient();
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newCampaign, setNewCampaign] = useState({ name: '', description: '' });
+
   const { data: campaigns = [], isLoading, error } = useQuery({
     queryKey: ['campaigns', shopId],
-    queryFn: async () => {
-      const all = await campaignApi.getCampaigns();
-      // Filtrer les campagnes de la boutique courante
-      return all.filter((c: any) => c.shop?.id === shopId);
-    },
+    queryFn: async () => campaignApi.getCampaigns(shopId),
     enabled: !!shopId
   });
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editData, setEditData] = useState<any>({});
-
-  const updateMutation = useMutation({
-    mutationFn: async (data: any) => campaignApi.updateCampaign(data.id, data),
-    onSuccess: () => {
-      setEditingId(null);
-      queryClient.invalidateQueries({ queryKey: ['campaigns', shopId] });
-    }
-  });
-
-  const handleEdit = (c: any) => {
-    setEditingId(c.id);
-    setEditData({ ...c });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setEditData({ ...editData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = () => {
-    updateMutation.mutate(editData);
-  };
-
-  // Ajout pour la création de campagne
-  const [isCreating, setIsCreating] = useState(false);
-  const [newCampaign, setNewCampaign] = useState({ name: '', description: '' });
   const createMutation = useMutation({
-    mutationFn: async (data: any) => campaignApi.createCampaign({ ...data, shopId }),
+    mutationFn: async (data: any) => {
+      return campaignApi.createCampaign({ ...data, shopId });
+    },
     onSuccess: () => {
       setIsCreating(false);
       setNewCampaign({ name: '', description: '' });
@@ -61,116 +36,178 @@ export function ShopAdminCampaigns() {
     createMutation.mutate(newCampaign);
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      if (window.confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) {
+        return campaignApi.deleteCampaign(id);
+      }
+      throw new Error('Suppression annulée');
+    },
+    onSuccess: () => {
+      setSelectedCampaign(null);
+      queryClient.invalidateQueries({ queryKey: ['campaigns', shopId] });
+    }
+  });
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
-      <h1 className="font-thunder text-3xl text-nolt-black mb-6">Campagnes de la boutique</h1>
-      {/* Bouton de création */}
-      <button
-        className="mb-4 px-4 py-2 bg-nolt-yellow rounded font-montserrat"
-        onClick={() => setIsCreating(true)}
-      >
-        Créer une campagne
-      </button>
+    <div className="container mx-auto max-w-6xl px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="font-thunder text-3xl text-nolt-black">Campagnes de la boutique</h1>
+        <button
+          className="px-4 py-2 bg-nolt-yellow rounded-lg font-montserrat hover:bg-nolt-yellow/90 transition-colors"
+          onClick={() => setIsCreating(true)}
+        >
+          Créer une campagne
+        </button>
+      </div>
+
       {/* Formulaire de création */}
       {isCreating && (
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 className="font-thunder text-xl mb-4">Nouvelle campagne</h2>
           <input
-            className="border rounded px-2 py-1 w-full mb-2"
+            className="border rounded-lg px-4 py-2 w-full mb-3 focus:ring-2 focus:ring-nolt-yellow focus:border-transparent"
             name="name"
             value={newCampaign.name}
             onChange={handleCreateChange}
             placeholder="Nom de la campagne"
           />
           <textarea
-            className="border rounded px-2 py-1 w-full mb-2"
+            className="border rounded-lg px-4 py-2 w-full mb-3 focus:ring-2 focus:ring-nolt-yellow focus:border-transparent"
             name="description"
             value={newCampaign.description}
             onChange={handleCreateChange}
             placeholder="Description"
           />
-          <div className="flex gap-2">
-            <button className="px-4 py-1 bg-nolt-yellow rounded" onClick={handleCreate}>Créer</button>
-            <button className="px-4 py-1 bg-gray-200 rounded" onClick={() => setIsCreating(false)}>Annuler</button>
+          <div className="flex gap-3">
+            <button 
+              className="px-6 py-2 bg-nolt-yellow rounded-lg hover:bg-nolt-yellow/90 transition-colors" 
+              onClick={handleCreate}
+            >
+              Créer
+            </button>
+            <button 
+              className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors" 
+              onClick={() => setIsCreating(false)}
+            >
+              Annuler
+            </button>
           </div>
         </div>
       )}
-      {isLoading && <div>Chargement...</div>}
-      {error && <div className="text-red-500">Erreur lors du chargement des campagnes</div>}
+
+      {isLoading && <div className="text-center py-8">Chargement...</div>}
+      {error && <div className="text-red-500 text-center py-8">Erreur lors du chargement des campagnes</div>}
       {(!isLoading && campaigns.length === 0) && (
-        <div className="text-gray-500">Aucune campagne pour cette boutique</div>
+        <div className="text-gray-500 text-center py-8">Aucune campagne pour cette boutique</div>
       )}
-      <div className="space-y-4">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {campaigns.map((c: any) => (
-          <div key={c.id} className="bg-white rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-            {editingId === c.id ? (
-              <div className="flex-1 space-y-2">
-                <input
-                  className="border rounded px-2 py-1 w-full mb-1"
-                  name="name"
-                  value={editData.name || ''}
-                  onChange={handleChange}
-                  placeholder="Nom de la campagne"
-                />
-                <textarea
-                  className="border rounded px-2 py-1 w-full mb-1"
-                  name="description"
-                  value={editData.description || ''}
-                  onChange={handleChange}
-                  placeholder="Description"
-                />
-                <div className="flex gap-2 mb-1">
-                  <input
-                    type="date"
-                    className="border rounded px-2 py-1"
-                    name="startDate"
-                    value={editData.startDate ? editData.startDate.slice(0,10) : ''}
-                    onChange={handleChange}
-                  />
-                  <input
-                    type="date"
-                    className="border rounded px-2 py-1"
-                    name="endDate"
-                    value={editData.endDate ? editData.endDate.slice(0,10) : ''}
-                    onChange={handleChange}
-                  />
-                  <select
-                    className="border rounded px-2 py-1"
-                    name="status"
-                    value={editData.status || ''}
-                    onChange={handleChange}
-                  >
-                    <option value="DRAFT">Brouillon</option>
-                    <option value="PAID">Payée</option>
-                    <option value="SENT">Envoyée</option>
-                  </select>
-                </div>
-                <div className="flex gap-2">
-                  <button className="px-4 py-1 bg-nolt-yellow rounded" onClick={handleSave}>Sauvegarder</button>
-                  <button className="px-4 py-1 bg-gray-200 rounded" onClick={() => setEditingId(null)}>Annuler</button>
+          <div 
+            key={c.id} 
+            className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition-shadow"
+            onClick={() => setSelectedCampaign(c)}
+          >
+            <div className="flex flex-col h-full">
+              <div className="flex-1">
+                <h3 className="font-medium text-lg mb-2">{c.name}</h3>
+                {c.description && (
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{c.description}</p>
+                )}
+                <div className="text-sm text-gray-500">
+                  {c.orders?.length || 0} commande{c.orders?.length !== 1 ? 's' : ''}
                 </div>
               </div>
-            ) : (
-              <>
-                <div>
-                  <div className="font-thunder text-xl text-nolt-black">{c.name}</div>
-                  <div className="text-gray-500 text-sm">{c.description}</div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {c.startDate ? `Début : ${new Date(c.startDate).toLocaleDateString()}` : ''}
-                    {c.endDate ? ` | Fin : ${new Date(c.endDate).toLocaleDateString()}` : ''}
-                  </div>
-                </div>
-                <div className="mt-2 md:mt-0 flex flex-col items-end gap-2">
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-nolt-yellow text-nolt-black">
-                    {c.status}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">
+                    {new Date(c.createdAt).toLocaleDateString()}
                   </span>
-                  <button className="text-xs text-nolt-orange underline" onClick={() => handleEdit(c)}>Éditer</button>
+                  <button 
+                    className="text-red-500 hover:text-red-600 text-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(c.id);
+                    }}
+                  >
+                    Supprimer
+                  </button>
                 </div>
-              </>
-            )}
+              </div>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Modal de détail de la campagne */}
+      {selectedCampaign && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="font-thunder text-2xl mb-2">{selectedCampaign.name}</h2>
+                  {selectedCampaign.description && (
+                    <p className="text-gray-600">{selectedCampaign.description}</p>
+                  )}
+                </div>
+                <button 
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => setSelectedCampaign(null)}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {selectedCampaign.orders?.map((order: any) => (
+                  <div key={order.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-medium">Commande #{order.id.slice(0, 8)}</h3>
+                        <p className="text-sm text-gray-500">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">{order.totalTtc}€</div>
+                        <div className="text-sm text-gray-500">{order.status}</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="font-medium mb-3">Produits commandés</h4>
+                      <div className="space-y-3">
+                        {order.items.map((item: any) => (
+                          <div key={item.id} className="flex justify-between items-center">
+                            <div>
+                              <div className="font-medium">{item.product?.label}</div>
+                              <div className="text-sm text-gray-500">
+                                Taille {item.size}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium">{item.quantity} unité{item.quantity > 1 ? 's' : ''}</div>
+                              <div className="text-sm text-gray-500">
+                                {item.priceTtc}€ l'unité
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

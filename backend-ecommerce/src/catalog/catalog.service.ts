@@ -100,7 +100,7 @@ export class CatalogService {
     } else {
       console.log('📊 Récupération de tous les produits avec leurs catégories');
       products = await this.productRepository.find({ 
-        relations: ['categories', 'images'] 
+        relations: ['categories', 'categories.category', 'images'] 
       });
       console.log(`📦 ${products.length} produits trouvés au total`);
     }

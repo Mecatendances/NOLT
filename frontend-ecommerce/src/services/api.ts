@@ -5,6 +5,45 @@ export const api = axios.create({
   baseURL: '/api',
 });
 
+// Intercepteur pour les requêtes
+api.interceptors.request.use(
+  (config) => {
+    // Ajout des headers par défaut si nécessaire
+    config.headers = {
+      ...config.headers,
+      'Content-Type': 'application/json',
+    };
+    return config;
+  },
+  (error) => {
+    console.error('Erreur lors de la configuration de la requête:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Intercepteur pour les réponses
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      // La requête a été faite et le serveur a répondu avec un code d'état
+      // qui est en dehors de la plage 2xx
+      console.error('Erreur API:', {
+        status: error.response.status,
+        data: error.response.data,
+        config: error.config
+      });
+    } else if (error.request) {
+      // La requête a été faite mais aucune réponse n'a été reçue
+      console.error('Pas de réponse du serveur:', error.request);
+    } else {
+      // Une erreur s'est produite lors de la configuration de la requête
+      console.error('Erreur de configuration:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Intercepteur pour ajouter le token d'authentification
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -86,6 +125,7 @@ export const shopApi = {
           stock: prod.stock ?? 0,
           category: prod.category?.id ?? prod.category ?? '',
           description: prod.description,
+          categories: prod.categories ?? [],
         };
       });
     } catch (error: any) {
@@ -106,10 +146,15 @@ export const shopApi = {
   },
 
   // Récupérer la liste des catégories Dolibarr
-  getCategories: async (): Promise<{ id: string; label: string }[]> => {
+  getCategories: async (): Promise<{ id: string; label: string; dolibarrId?: number; fkParent?: number }[]> => {
     try {
-      const response = await api.get('/dolibarr/categories');
-      return (response.data as any[]).map(cat => ({ id: String(cat.id), label: cat.label }));
+      const response = await api.get('/catalog/categories');
+      return (response.data as any[]).map(cat => ({
+        id: String(cat.id),
+        label: cat.label,
+        dolibarrId: cat.dolibarrId,
+        fkParent: cat.fkParent
+      }));
     } catch (error) {
       console.error('Erreur lors de la récupération des catégories', error);
       return [];
@@ -192,6 +237,7 @@ export const shopApi = {
             category: prod.category?.id ?? prod.category ?? '',
             description: prod.description,
             subCategoryIds: prod.subCategoryIds,
+            categories: prod.categories ?? [],
             ...(prod as object),
           };
           console.log(`[getShop] Produit ${prod.id} - Données finales:`, mappedProduct);
@@ -341,6 +387,11 @@ export const shopApi = {
       return [];
     }
   },
+
+  getCampaignWithOrders: async (id: string) => {
+    const response = await api.get(`/campaigns/${id}`);
+    return response.data;
+  },
 };
 
 export const userApi = {
@@ -426,10 +477,28 @@ export const orderApi = {
     return response.data;
   },
   getOrder: async (id: string, shopId: string) => {
-    const response = await api.get(`/orders/${id}`, {
-      headers: { 'x-tenant-id': shopId }
-    });
-    return response.data;
+    console.log('API - Récupération de la commande:', { id, shopId });
+    try {
+      const response = await api.get(`/orders/${id}`, {
+        headers: { 
+          'x-tenant-id': shopId,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('API - Réponse de la commande:', response.data);
+      if (!response.data) {
+        throw new Error('Aucune donnée reçue du serveur');
+      }
+      return response.data;
+    } catch (error: any) {
+      console.error('API - Erreur lors de la récupération de la commande:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        headers: error.response?.headers
+      });
+      throw error;
+    }
   },
   updateStatus: async (id: string, status: string, shopId: string) => {
     const response = await api.patch(`/orders/${id}/status`, { status }, {
@@ -454,8 +523,9 @@ export const orderApi = {
 };
 
 export const campaignApi = {
-  getCampaigns: async () => {
-    const response = await api.get('/campaigns');
+  getCampaigns: async (shopId?: string) => {
+    const params = shopId ? `?shopId=${shopId}` : '';
+    const response = await api.get(`/campaigns${params}`);
     return response.data;
   },
   getCampaign: async (id: string) => {
@@ -463,8 +533,15 @@ export const campaignApi = {
     return response.data;
   },
   createCampaign: async (data: any) => {
-    const response = await api.post('/campaigns', data);
-    return response.data;
+    console.log('API - Création de campagne avec données:', data);
+    try {
+      const response = await api.post('/campaigns', data);
+      console.log('API - Réponse de création de campagne:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API - Erreur lors de la création de campagne:', error);
+      throw error;
+    }
   },
   addOrdersToCampaign: async (campaignId: string, orderIds: string[]) => {
     const response = await api.post(`/campaigns/${campaignId}/add-orders`, { orderIds });
@@ -473,6 +550,17 @@ export const campaignApi = {
   getCampaignsByShop: async () => {
     const response = await api.get('/admin/campaigns/by-shop');
     return response.data;
+  },
+  deleteCampaign: async (id: string) => {
+    console.log('API - Suppression de la campagne:', id);
+    try {
+      const response = await api.delete(`/campaigns/${id}`);
+      console.log('API - Réponse de suppression:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API - Erreur lors de la suppression:', error);
+      throw error;
+    }
   },
 };
 
@@ -509,6 +597,7 @@ export const productApi = {
           stock: prod.stock ?? 0,
           category: prod.category?.id ?? prod.category ?? '',
           description: prod.description,
+          categories: prod.categories ?? [],
         };
       });
     } catch (error) {

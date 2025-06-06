@@ -78,7 +78,52 @@ export class OrdersService {
   }
 
   async findOne(id: string): Promise<OrderEntity | null> {
-    return this.orderRepository.findOne({ where: { id } });
+    console.log('Service - Recherche de la commande:', id);
+    const order = await this.orderRepository.findOne({
+      where: { id },
+      relations: ['user', 'items', 'items.product', 'items.product.images', 'shop', 'campaign'],
+      select: {
+        id: true,
+        totalTtc: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        shopId: true,
+        user: {
+          id: true,
+          email: true,
+          phone: true,
+          address: true,
+          zipCode: true,
+          city: true
+        },
+        items: {
+          id: true,
+          quantity: true,
+          size: true,
+          unitPriceTtc: true,
+          product: {
+            id: true,
+            label: true,
+            images: {
+              id: true,
+              url: true,
+              order: true
+            }
+          }
+        },
+        shop: {
+          id: true,
+          name: true
+        },
+        campaign: {
+          id: true,
+          name: true
+        }
+      }
+    });
+    console.log('Service - Commande trouvée:', order);
+    return order;
   }
 
   async findByUser(userId: string): Promise<OrderEntity[]> {
@@ -91,11 +136,14 @@ export class OrdersService {
   }
 
   async findByShop(shopId: string): Promise<OrderEntity[]> {
-    return this.orderRepository.find({
+    const orders = await this.orderRepository.find({
       where: { shop: { id: shopId } },
       order: { createdAt: 'DESC' },
-      relations: ['user', 'items', 'shop'],
+      relations: ['user', 'items', 'shop', 'campaign'],
     });
+    console.log('[findByShop] Orders retournés:', orders.map(o => ({ id: o.id, shopId: o.shopId, createdAt: o.createdAt })));
+    // On retourne directement les entités, le champ id est bien celui de la commande
+    return orders;
   }
 
   async assignCampaign(orderId: string, campaignId: string | null): Promise<OrderEntity | null> {
@@ -106,7 +154,9 @@ export class OrdersService {
     } else {
       order.campaign = null;
     }
-    return this.orderRepository.save(order);
+    await this.orderRepository.save(order);
+    // Recharge la commande avec la relation campaign pour le retour API
+    return this.orderRepository.findOne({ where: { id: orderId }, relations: ['campaign'] });
   }
 
   async updateStatus(id: string, status: OrderStatus): Promise<OrderEntity | null> {

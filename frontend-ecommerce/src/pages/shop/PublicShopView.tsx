@@ -56,11 +56,21 @@ export function PublicShopView() {
     }
   }, [id]);
 
-  // Récupérer les catégories
-  const { data: subcategories = [], isLoading: isLoadingCategory } = useQuery<CategoryTree[]>({
+  // Récupérer toutes les catégories locales
+  const { data: allCategories = [], isLoading: isLoadingCategory } = useQuery<CategoryTree[]>({
     queryKey: ['categories'],
     queryFn: shopApi.getCategories
   });
+
+  // Filtrer les sous-catégories associées à la boutique courante (logique admin local)
+  const subcategories = useMemo(() => {
+    if (!allCategories || !shop) return [];
+    // 1. Trouver la racine correspondant à la boutique
+    const racine = allCategories.find(cat => Number(cat.dolibarrId) === Number(shop.dolibarrCategoryId));
+    if (!racine) return [];
+    // 2. Retourner les sous-catégories directes de la racine
+    return allCategories.filter(cat => cat.fkParent === Number(racine.id));
+  }, [allCategories, shop]);
 
   // Générer dynamiquement les catégories d'affichage à partir des sous-catégories
   type DisplayCategory = { id: string; name: string; count: number; subcategoryId?: string };
@@ -80,28 +90,56 @@ export function PublicShopView() {
     return dynamicCategories;
   }, [subcategories]);
 
-  // Récupérer les produits de la catégorie sélectionnée ou tous les produits de la boutique
-  const { data: selectedCategoryProducts = [], isLoading } = useQuery<Product[]>({
-    queryKey: ['products-public-shop', id, selectedCategory],
-    queryFn: async () => {
-      const selectedCatObj = categories.find(cat => cat.id === selectedCategory);
-      if (selectedCategory && selectedCategory !== 'all' && selectedCatObj?.subcategoryId) {
-        return shopApi.getProducts({ category: selectedCatObj.subcategoryId });
-      }
-      // Tous les produits de toutes les sous-catégories de cette boutique
-      const allProductsPromises = subcategories.map(
-        subcat => shopApi.getProducts({ category: subcat.id })
-      );
-      const results = await Promise.all(allProductsPromises);
-      return results.flat();
-    },
-    enabled: !isLoadingCategory && !!shop
+  // Charger tous les produits de la boutique pour les compteurs et le filtrage local
+  const { data: allProducts = [], isLoading: isLoadingAllProducts } = useQuery<Product[]>({
+    queryKey: ['shop-products-all', id],
+    queryFn: () => shopApi.getProducts({ shopId: id }),
+    enabled: !!id && !isLoadingCategory && subcategories.length > 0
   });
+
+  // Calculer le nombre de produits pour chaque catégorie dès le chargement
+  const categoriesWithCounts = useMemo(() => {
+    if (!allProducts || subcategories.length === 0) return categories;
+    // Compter pour chaque sous-catégorie
+    const counts: Record<string, number> = {};
+    subcategories.forEach(subcat => {
+      counts[subcat.id] = allProducts.filter(
+        p => Array.isArray(p.categories) && p.categories.some(cat => String(cat.id) === String(subcat.id))
+      ).length;
+    });
+    // Catégorie "Tous les produits" toujours le total
+    const allCount = allProducts.length;
+    return categories.map((cat: DisplayCategory) => {
+      if (cat.id === 'all') return { ...cat, count: allCount };
+      if (cat.subcategoryId) return { ...cat, count: counts[cat.subcategoryId] || 0 };
+      return cat;
+    });
+  }, [categories, allProducts, subcategories]);
+
+  // Filtrage des produits selon la catégorie sélectionnée
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory && selectedCategory !== 'all') {
+      const subcat = subcategories.find(s => {
+        const catId = s.id.toString();
+        return (
+          selectedCategory === s.label.toLowerCase().replace(/[^a-z0-9]/g, '_') ||
+          selectedCategory === catId
+        );
+      });
+      if (subcat) {
+        return allProducts.filter(
+          p => Array.isArray(p.categories) && p.categories.some(cat => String(cat.id) === String(subcat.id))
+        );
+      }
+      return [];
+    }
+    return allProducts;
+  }, [selectedCategory, allProducts, subcategories]);
 
   // Demo sizes
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  if (isLoadingShop || isLoading || isLoadingCategory) {
+  if (isLoadingShop || isLoadingAllProducts || isLoadingCategory) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
@@ -137,8 +175,6 @@ export function PublicShopView() {
   if (!isLoadingCategory && subcategories && subcategories.length === 0) {
     return <div>Aucune sous-catégorie trouvée.</div>;
   }
-
-  const filteredProducts = selectedCategoryProducts;
 
   return (
     <div className="min-h-screen bg-white">
@@ -226,7 +262,7 @@ export function PublicShopView() {
                 <h2 className="text-xl font-thunder italic uppercase text-nolt-black mb-4">Catégories</h2>
                 <div className="border-b pb-6 mb-6 bg-white rounded-lg p-4 shadow-sm">
                   <ul className="space-y-1">
-                    {categories.map((category) => (
+                    {categoriesWithCounts.map((category) => (
                       <li key={category.id}>
                         <button
                           onClick={() => setSelectedCategory(category.id)}

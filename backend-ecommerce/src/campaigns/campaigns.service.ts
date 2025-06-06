@@ -16,15 +16,43 @@ export class CampaignsService {
   ) {}
 
   async create(dto: CreateCampaignDto): Promise<CampaignEntity> {
-    const campaign = this.campaignRepository.create({
-      name: dto.name,
-      description: dto.description,
-    });
-    return this.campaignRepository.save(campaign);
+    console.log('Service - Création de campagne avec DTO:', dto);
+    try {
+      const campaign = this.campaignRepository.create({
+        name: dto.name,
+        description: dto.description,
+        shopId: dto.shopId,
+      });
+      console.log('Campagne créée (avant sauvegarde):', campaign);
+      const savedCampaign = await this.campaignRepository.save(campaign);
+      console.log('Campagne sauvegardée avec succès:', savedCampaign);
+      return savedCampaign;
+    } catch (error) {
+      console.error('Erreur dans le service lors de la création de la campagne:', error);
+      throw error;
+    }
   }
 
   findAll(): Promise<CampaignEntity[]> {
-    return this.campaignRepository.find({ order: { createdAt: 'DESC' }, relations: ['orders'] });
+    console.log('Récupération de toutes les campagnes');
+    return this.campaignRepository.find({ 
+      order: { createdAt: 'DESC' }, 
+      relations: ['orders', 'shop'],
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        status: true,
+        totalTtc: true,
+        createdAt: true,
+        updatedAt: true,
+        shopId: true,
+        shop: {
+          id: true,
+          name: true
+        }
+      }
+    });
   }
 
   async findOne(id: string): Promise<CampaignEntity> {
@@ -106,5 +134,38 @@ export class CampaignsService {
       });
     }
     return Object.values(grouped);
+  }
+
+  async remove(id: string): Promise<void> {
+    console.log('Service - Suppression de la campagne:', id);
+    try {
+      const campaign = await this.findOne(id);
+      if (!campaign) {
+        throw new NotFoundException('Campagne non trouvée');
+      }
+      
+      // D'abord, dissocier les commandes de la campagne
+      if (campaign.orders && campaign.orders.length > 0) {
+        for (const order of campaign.orders) {
+          order.campaign = null;
+          await this.orderRepository.save(order);
+        }
+      }
+      
+      // Ensuite, supprimer la campagne
+      await this.campaignRepository.remove(campaign);
+      console.log('Campagne supprimée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la campagne:', error);
+      throw error;
+    }
+  }
+
+  async findByShop(shopId: string): Promise<CampaignEntity[]> {
+    return this.campaignRepository.find({
+      where: { shopId },
+      order: { createdAt: 'DESC' },
+      relations: ['orders', 'orders.items', 'orders.items.product', 'shop'],
+    });
   }
 } 

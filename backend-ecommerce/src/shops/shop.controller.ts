@@ -35,10 +35,18 @@ export class ShopController {
 
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<Shop> {
-    const shop = await this.shopsService.findOne(id);
-    if (!shop) {
-      throw new NotFoundException(`Shop with ID ${id} not found`);
+    console.log(`Requête GET /shops/${id} reçue`);
+    try {
+      const shop = await this.shopsService.findOne(id);
+      if (!shop) {
+        console.log(`Boutique non trouvée pour l'ID: ${id}`);
+        throw new NotFoundException(`Shop with ID ${id} not found`);
+      }
+      console.log(`Boutique trouvée: ${shop.name}`);
+      return shop;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération de la boutique ${id}:`, error);
+      throw error;
     }
-    return shop;
   }
 } 

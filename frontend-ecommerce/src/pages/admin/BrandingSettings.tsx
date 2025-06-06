@@ -454,13 +454,21 @@ export function BrandingSettings() {
                       </Typography>
                       <Box display="flex" gap={2} alignItems="center">
                         <ChromePicker
-                          color={settings.primaryColor}
+                          color={settings.primaryColor || "#0E214A"}
                           onChange={color => setSettings(prev => ({ ...prev, primaryColor: color.hex }))}
                           disableAlpha
                         />
                         <TextField
-                          value={settings.primaryColor || ""}
-                          onChange={e => setSettings(prev => ({ ...prev, primaryColor: e.target.value }))}
+                          value={settings.primaryColor || "#0E214A"}
+                          onChange={e => {
+                            const value = e.target.value;
+                            // Regex hexadécimal simple
+                            if (/^#([0-9A-Fa-f]{6})$/.test(value)) {
+                              setSettings(prev => ({ ...prev, primaryColor: value }));
+                            } else if (value === "") {
+                              setSettings(prev => ({ ...prev, primaryColor: "#0E214A" }));
+                            }
+                          }}
                           helperText="Code hexadécimal"
                         />
                       </Box>
@@ -478,13 +486,20 @@ export function BrandingSettings() {
                       </Typography>
                       <Box display="flex" gap={2} alignItems="center">
                         <ChromePicker
-                          color={settings.secondaryColor}
+                          color={settings.secondaryColor || "#FFD600"}
                           onChange={color => setSettings(prev => ({ ...prev, secondaryColor: color.hex }))}
                           disableAlpha
                         />
                         <TextField
-                          value={settings.secondaryColor || ""}
-                          onChange={e => setSettings(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                          value={settings.secondaryColor || "#FFD600"}
+                          onChange={e => {
+                            const value = e.target.value;
+                            if (/^#([0-9A-Fa-f]{6})$/.test(value)) {
+                              setSettings(prev => ({ ...prev, secondaryColor: value }));
+                            } else if (value === "") {
+                              setSettings(prev => ({ ...prev, secondaryColor: "#FFD600" }));
+                            }
+                          }}
                           helperText="Code hexadécimal"
                         />
                       </Box>

@@ -76,43 +76,53 @@ export function AdminShopCatalog() {
     return dynamicCategories;
   }, [subcategories]);
 
-  // Récupérer les produits de la catégorie sélectionnée ou tous les produits
-  const { data: selectedCategoryProducts = [], isLoading } = useQuery<Product[]>({
-    queryKey: ['shop-products', shopId, selectedCategory, subcategories],
-    queryFn: async () => {
-      const selectedCatObj = categories.find(cat => cat.id === selectedCategory);
-      if (selectedCategory && selectedCategory !== 'all' && selectedCatObj?.subcategoryId) {
-        return shopApi.getProducts({ category: selectedCatObj.subcategoryId });
-      }
-      // Si "Tous les produits" est sélectionné, récupérer les produits de toutes les sous-catégories
-      const allProductsPromises = subcategories.map(
-        subcat => shopApi.getProducts({ category: subcat.id })
-      );
-      const results = await Promise.all(allProductsPromises);
-      return results.flat();
-    },
-    enabled: !isLoadingCategory && !!shopId && subcategories.length > 0
+  // Charger tous les produits de la boutique pour les compteurs et le filtrage local
+  const { data: allProducts = [], isLoading: isLoadingAllProducts } = useQuery<Product[]>({
+    queryKey: ['shop-products-all', shopId],
+    queryFn: () => shopApi.getProducts({ shopId }),
+    enabled: !!shopId && !isLoadingCategory && subcategories.length > 0
   });
 
-  // Mettre à jour le compteur de produits pour chaque catégorie
-  useEffect(() => {
-    if (selectedCategoryProducts.length > 0) {
-      const selectedCat = categories.find(cat => cat.id === selectedCategory);
-      if (selectedCat) {
-        const updatedCategories = categories.map(cat => {
-          if (cat.id === selectedCategory) {
-            return { ...cat, count: selectedCategoryProducts.length };
-          }
-          return cat;
-        });
-        categories.splice(0, categories.length, ...updatedCategories);
+  // Calculer le nombre de produits pour chaque catégorie dès le chargement
+  const categoriesWithCounts = useMemo(() => {
+    if (!allProducts || subcategories.length === 0) return categories;
+    // Compter pour chaque sous-catégorie
+    const counts: Record<string, number> = {};
+    subcategories.forEach(subcat => {
+      counts[subcat.id] = allProducts.filter(
+        p => Array.isArray(p.categories) && p.categories.some(cat => String(cat.id) === String(subcat.id))
+      ).length;
+    });
+    // Catégorie "Tous les produits" toujours le total
+    const allCount = allProducts.length;
+    return categories.map(cat => {
+      if (cat.id === 'all') return { ...cat, count: allCount };
+      if (cat.subcategoryId) return { ...cat, count: counts[cat.subcategoryId] || 0 };
+      return cat;
+    });
+  }, [categories, allProducts, subcategories]);
+
+  // Filtrage des produits selon la catégorie sélectionnée
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory && selectedCategory !== 'all') {
+      const subcat = subcategories.find(s => {
+        const catId = s.id.toString();
+        return (
+          selectedCategory === s.label.toLowerCase().replace(/[^a-z0-9]/g, '_') ||
+          selectedCategory === catId
+        );
+      });
+      if (subcat) {
+        return allProducts.filter(
+          p => Array.isArray(p.categories) && p.categories.some(cat => String(cat.id) === String(subcat.id))
+        );
       }
+      return [];
     }
-  }, [selectedCategoryProducts, selectedCategory]);
+    return allProducts;
+  }, [selectedCategory, allProducts, subcategories]);
 
-  const filteredProducts = selectedCategoryProducts;
-
-  if (isLoadingShop || isLoadingCategory || isLoading) {
+  if (isLoadingShop || isLoadingCategory || isLoadingAllProducts) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
@@ -167,7 +177,7 @@ export function AdminShopCatalog() {
             <div className="border-b pb-6 mb-6 bg-white rounded-lg p-4 shadow-sm">
               <h2 className="text-xl font-thunder italic uppercase text-nolt-black mb-4">Catégories</h2>
               <ul className="space-y-1">
-                {categories.map((category) => (
+                {categoriesWithCounts.map((category) => (
                   <li key={category.id}>
                     <button
                       onClick={() => setSelectedCategory(category.id)}

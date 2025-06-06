@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Delete, Query } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { AddOrdersDto } from './dto/add-orders.dto';
@@ -8,12 +8,23 @@ export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 
   @Post()
-  create(@Body() dto: CreateCampaignDto) {
-    return this.campaignsService.create(dto);
+  async create(@Body() dto: CreateCampaignDto) {
+    console.log('Création de campagne - DTO reçu:', dto);
+    try {
+      const campaign = await this.campaignsService.create(dto);
+      console.log('Campagne créée avec succès:', campaign);
+      return campaign;
+    } catch (error) {
+      console.error('Erreur lors de la création de la campagne:', error);
+      throw error;
+    }
   }
 
   @Get()
-  list() {
+  list(@Query('shopId') shopId?: string) {
+    if (shopId) {
+      return this.campaignsService.findByShop(shopId);
+    }
     return this.campaignsService.findAll();
   }
 
@@ -30,5 +41,17 @@ export class CampaignsController {
   @Post(':id/remove-order/:orderId')
   removeOrder(@Param('id') id: string, @Param('orderId') orderId: string) {
     return this.campaignsService.removeOrder(id, orderId);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    console.log('Suppression de la campagne:', id);
+    try {
+      await this.campaignsService.remove(id);
+      return { message: 'Campagne supprimée avec succès' };
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la campagne:', error);
+      throw error;
+    }
   }
 } 

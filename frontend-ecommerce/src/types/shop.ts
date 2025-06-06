@@ -10,6 +10,7 @@ export interface Product {
   category?: string;
   description?: string;
   subCategoryIds?: string[];
+  categories?: { id: string | number; label: string }[];
 }
 
 export interface Shop {
@@ -28,6 +29,9 @@ export interface Shop {
 export interface CategoryTree {
   id: string;
   label: string;
+  dolibarrId?: number;
+  fkParent?: number;
+  parent?: string;
   children?: CategoryTree[];
 }
 
